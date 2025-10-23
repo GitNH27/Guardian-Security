@@ -5,7 +5,8 @@ CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    name VARCHAR(255) NOT NULL,
+    firstName VARCHAR(255) NOT NULL,
+    lastName VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -43,24 +44,3 @@ CREATE INDEX idx_devices_status ON devices(status);
 CREATE INDEX idx_device_access_user_id ON device_access(user_id);
 CREATE INDEX idx_device_access_device_id ON device_access(device_id);
 CREATE INDEX idx_device_access_role ON device_access(role);
-
--- Insert Test User
-INSERT INTO users (id, email, password_hash, name) VALUES
-(1, 'testuser@example.com', '$2a$10$wS6Q3Tf1vMv.D.H2I.E/W.f1g7G8H9hJ0kL2mP4rV6yB8cA9xD0eF', 'Test User');
-
--- Insert a Device (ready to be claimed)
-INSERT INTO devices (id, serial_number, device_secret, pairing_password, status) VALUES
-(101, 'RASPI-0001', 'secure-jwt-secret-101-for-rpi', '123456789012', 'UNCLAIMED');
-
--- Insert a Pre-Claimed Device (for testing command routing)
-INSERT INTO devices (id, serial_number, device_secret, status) VALUES
-(102, 'RASPI-0002', 'secure-jwt-secret-102-for-rpi', 'ONLINE');
-
--- Link the Test User to the Pre-Claimed Device
-INSERT INTO device_access (user_id, device_id, role) VALUES
-(1, 102, 'OWNER');
-
--- Flyway will reset BIGSERIAL sequences based on the highest ID used
-SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
-SELECT setval('devices_id_seq', (SELECT MAX(id) FROM devices));
-SELECT setval('device_access_id_seq', (SELECT MAX(id) FROM device_access));

@@ -12,10 +12,11 @@ public class User {
     }
 
     // Default constructor
-    public User(String email, String passwordHash, String name) {
+    public User(String email, String passwordHash, String firstName, String lastName) {
         this.email = email;
         this.passwordHash = passwordHash;
-        this.name = name;
+        this.firstName = firstName;
+        this.lastName = lastName;
     }
 
     @Id
@@ -28,8 +29,11 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
+
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -62,12 +66,20 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
-    public String getName() {
-        return name;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public LocalDateTime getCreatedAt() {
