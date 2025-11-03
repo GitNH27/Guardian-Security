@@ -1,7 +1,8 @@
-package com.example.security_frontend.dto
+package com.example.security_frontend.dto.response
 
 data class UserResponse(
-    val id: Int,
-    val name: String,
-    val email: String
+    val id: Long,
+    val email: String,
+    val firstName: String,
+    val lastName: String
 )
