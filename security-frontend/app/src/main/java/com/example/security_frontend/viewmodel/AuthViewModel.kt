@@ -12,6 +12,7 @@ import com.example.security_frontend.utils.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 class AuthViewModel(
     private val authRepository: AuthRepository,
@@ -32,8 +33,12 @@ class AuthViewModel(
                     sessionManager.saveToken(it.token)
                     _loginState.value = Resource.Success(it)
                 }
-                .onFailure {
-                    _loginState.value = Resource.Error(it.message ?: "Unknown error")
+                .onFailure { e ->
+                    val message = when (e) {
+                        is IOException -> e.message ?: "Network error"
+                        else -> "Unexpected error: ${e.message}"
+                    }
+                    _loginState.value = Resource.Error(message)
                 }
         }
     }
@@ -45,8 +50,12 @@ class AuthViewModel(
                 .onSuccess {
                     _registerState.value = Resource.Success(it)
                 }
-                .onFailure {
-                    _registerState.value = Resource.Error(it.message ?: "Unknown error")
+                .onFailure { e ->
+                    val message = when (e) {
+                        is IOException -> e.message ?: "Network error"
+                        else -> "Unexpected error: ${e.message}"
+                    }
+                    _loginState.value = Resource.Error(message)
                 }
         }
     }
