@@ -10,6 +10,10 @@ import com.GuardianSecurity.security_backend.dto.request.RegisterRequest;
 import com.GuardianSecurity.security_backend.dto.request.LoginRequest;
 import com.GuardianSecurity.security_backend.dto.response.AuthResponse;
 import com.GuardianSecurity.security_backend.dto.response.UserResponse;
+import com.GuardianSecurity.security_backend.dto.request.UnverifiedUserRequest;
+
+import org.springframework.data.redis.core.RedisTemplate;
+import java.time.Duration;
 
 import org.springframework.stereotype.Service;
 import java.util.Optional;
@@ -19,18 +23,46 @@ public class AuthService {
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
     private JwtSecurityTask jwtSecurityTask;
+    private VerifyEmail verifyEmail;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtSecurityTask jwtSecurityTask) {
+    // Autowire the configured RedisTemplate
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    private static final String UNVERIFIED_USER_PREFIX = "unverified:"; 
+    private static final Duration CODE_EXPIRY = Duration.ofHours(1);
+
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtSecurityTask jwtSecurityTask, VerifyEmail verifyEmail) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtSecurityTask = jwtSecurityTask;
+        this.verifyEmail = verifyEmail;
     }
 
-    public User register(RegisterRequest request) {
+    // Store unverified user with code in Redis
+    public void storeUnverifiedUser(RegisterRequest request, String verificationCode) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email already in use");
         }
+        UnverifiedUserRequest unverifiedUser = new UnverifiedUserRequest(request, verificationCode);
+        String key = UNVERIFIED_USER_PREFIX + request.getEmail();
+        redisTemplate.opsForValue().set(key, unverifiedUser, CODE_EXPIRY);
+    }
 
+    // Verify email code and register user
+    public User register(RegisterRequest request, String verificationCode) {
+        // Retrieve unverified user from Redis
+        String key = UNVERIFIED_USER_PREFIX + request.getEmail();
+
+        // Cast the retrieved object to UnverifiedUserRequest
+        UnverifiedUserRequest storedUnverifiedUser = (UnverifiedUserRequest) redisTemplate.opsForValue().get(key);
+
+        // Check if user input verification code matches stored code from Redis
+        if (!storedUnverifiedUser.getVerificationCode().equals(verificationCode)) {
+            throw new RuntimeException("Invalid or expired verification code.");
+        }
+
+        // Persist the user to the main database
         User newUser = new User(
                 request.getEmail(),
                 passwordEncoder.encode(request.getPassword()),
@@ -39,6 +71,8 @@ public class AuthService {
         );
 
         User savedUser = userRepository.save(newUser);
+
+        redisTemplate.delete(key);
 
         return savedUser;
     }
