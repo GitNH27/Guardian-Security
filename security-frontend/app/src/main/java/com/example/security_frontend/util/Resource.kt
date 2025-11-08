@@ -1,4 +1,4 @@
-package com.example.security_frontend.utils
+package com.example.security_frontend.util
 
 // utils/Resource.kt
 sealed class Resource<T> {

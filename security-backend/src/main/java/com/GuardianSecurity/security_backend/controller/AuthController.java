@@ -5,6 +5,7 @@ import com.GuardianSecurity.security_backend.dto.request.LoginRequest;
 import com.GuardianSecurity.security_backend.dto.request.RegisterRequest;
 import com.GuardianSecurity.security_backend.dto.response.AuthResponse;
 import com.GuardianSecurity.security_backend.dto.response.UserResponse;
+import com.GuardianSecurity.security_backend.dto.response.VerifyUserResponse;
 import com.GuardianSecurity.security_backend.service.AuthService;
 
 import com.GuardianSecurity.security_backend.service.VerifyEmail;
@@ -27,7 +28,7 @@ public class AuthController {
     }
 
     @PostMapping("/verifycode")
-    public ResponseEntity<String> registerUser(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<VerifyUserResponse> registerUser(@Valid @RequestBody RegisterRequest request) {
         // Generate verification code
         String verificationCode = verifyEmail.generateVerificationCode();
 
@@ -37,7 +38,7 @@ public class AuthController {
         // Send verification email
         verifyEmail.sendVerificationEmail(request.getEmail(), verificationCode);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body("Verification email sent");
+        return ResponseEntity.status(HttpStatus.CREATED).body(new VerifyUserResponse("Verification email sent"));
     }
 
     @PostMapping("/verify-registration")

@@ -1,4 +1,5 @@
 package com.example.security_frontend.dto.response
 
-class VerifyUserResponse {
-}
+data class VerifyUserResponse(
+    val message: String
+)

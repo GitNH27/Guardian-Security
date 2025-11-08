@@ -1,23 +1,31 @@
 package com.example.security_frontend.uiScreens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.security_frontend.dto.request.RegisterRequest
-import com.example.security_frontend.utils.Resource
+import com.example.security_frontend.ui.theme.GoldAccent
+import com.example.security_frontend.ui.theme.HintColor
+import com.example.security_frontend.ui.theme.TextColor
+import com.example.security_frontend.util.Resource
 import com.example.security_frontend.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 import java.util.regex.Pattern
 
 @Composable
 fun RegisterScreen(
-    authViewModel: AuthViewModel = viewModel(),
-    onRegisterSuccess: () -> Unit,
+    authViewModel: AuthViewModel,
+    onCodeSent: () -> Unit,
     onBackToLogin: () -> Unit
 ) {
     var firstName by remember { mutableStateOf("") }
@@ -25,23 +33,21 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val registerState by authViewModel.registerState.collectAsState()
+    val sendCodeState by authViewModel.sendCodeState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(registerState) {
-        when (registerState) {
+    LaunchedEffect(sendCodeState) {
+        when (val state = sendCodeState) {
             is Resource.Success -> {
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Registration successful!")
+                    snackbarHostState.showSnackbar("Verification code sent to your email!")
                 }
-                onRegisterSuccess()
+                onCodeSent()
             }
             is Resource.Error -> {
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        (registerState as Resource.Error).message
-                    )
+                    snackbarHostState.showSnackbar(state.message)
                 }
             }
             else -> {}
@@ -49,79 +55,73 @@ fun RegisterScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Register", style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(16.dp))
+            Text("CREATE ACCOUNT", style = MaterialTheme.typography.titleLarge, color = TextColor)
+            Spacer(modifier = Modifier.height(24.dp))
 
-            TextField(value = firstName, onValueChange = { firstName = it }, label = { Text("First Name") })
-            Spacer(modifier = Modifier.height(8.dp))
-            TextField(value = lastName, onValueChange = { lastName = it }, label = { Text("Last Name") })
-            Spacer(modifier = Modifier.height(8.dp))
-            TextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, singleLine = true)
-            Spacer(modifier = Modifier.height(8.dp))
-            TextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
+            // Input Fields
+            val textFieldColors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = GoldAccent,
+                unfocusedBorderColor = HintColor,
+                cursorColor = GoldAccent,
+                focusedTextColor = TextColor,
+                unfocusedTextColor = TextColor,
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedLabelColor = GoldAccent,
+                unfocusedLabelColor = HintColor,
             )
 
+            OutlinedTextField(firstName, { firstName = it }, label = { Text("First Name", color = HintColor) }, modifier = Modifier.fillMaxWidth(), colors = textFieldColors, leadingIcon = { Icon(Icons.Filled.Person, "", tint = GoldAccent) })
             Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(lastName, { lastName = it }, label = { Text("Last Name", color = HintColor) }, modifier = Modifier.fillMaxWidth(), colors = textFieldColors, leadingIcon = { Icon(Icons.Filled.Person, "", tint = GoldAccent) })
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(email, { email = it }, label = { Text("Email", color = HintColor) }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = textFieldColors, leadingIcon = { Icon(Icons.Filled.Email, "", tint = GoldAccent) })
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(password, { password = it }, label = { Text("Password", color = HintColor) }, singleLine = true, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(), colors = textFieldColors, leadingIcon = { Icon(Icons.Filled.Lock, "", tint = GoldAccent) })
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = {
                     when {
-                        firstName.isBlank() || lastName.isBlank() || email.isBlank() || password.isBlank() -> {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("All fields are required.")
-                            }
-                        }
-                        !isValidEmail(email) -> {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Invalid email format.")
-                            }
-                        }
-                        password.length < 6 -> {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Password must be at least 6 characters.")
-                            }
-                        }
+                        firstName.isBlank() || lastName.isBlank() || email.isBlank() || password.isBlank() -> coroutineScope.launch { snackbarHostState.showSnackbar("All fields are required.") }
+                        !isValidEmail(email) -> coroutineScope.launch { snackbarHostState.showSnackbar("Invalid email format.") }
+                        password.length < 6 -> coroutineScope.launch { snackbarHostState.showSnackbar("Password must be at least 6 characters.") }
                         else -> {
-                            authViewModel.register(
-                                RegisterRequest(
-                                    email = email,
-                                    password = password,
-                                    firstName = firstName,
-                                    lastName = lastName
-                                )
+                            authViewModel.sendVerificationCode(
+                                RegisterRequest(email, password, firstName, lastName)
                             )
                         }
                     }
                 },
-                enabled = registerState !is Resource.Loading
+                enabled = sendCodeState !is Resource.Loading,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = GoldAccent, contentColor = MaterialTheme.colorScheme.onPrimary),
+                shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Register")
+                Text("GET VERIFICATION CODE", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 4.dp))
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             TextButton(onClick = onBackToLogin) {
-                Text("Already have an account? Login")
+                Text("Already have an account? Login", color = GoldAccent)
             }
 
-            if (registerState is Resource.Loading) {
+            if (sendCodeState is Resource.Loading) {
                 Spacer(modifier = Modifier.height(16.dp))
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = GoldAccent)
             }
         }
     }
