@@ -3,10 +3,13 @@ package com.GuardianSecurity.security_backend.controller;
 import com.GuardianSecurity.security_backend.model.User;
 import com.GuardianSecurity.security_backend.model.Device;
 import com.GuardianSecurity.security_backend.model.DeviceAccess;
+import com.GuardianSecurity.security_backend.model.DeviceAccessPermission;
 
 import com.GuardianSecurity.security_backend.service.DeviceService;
 
 import com.GuardianSecurity.security_backend.dto.request.DeviceClaimRequest;
+import com.GuardianSecurity.security_backend.dto.request.DeviceRequestDTO;
+import com.GuardianSecurity.security_backend.dto.request.AccessDeviceRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,4 +35,17 @@ public class DeviceController {
         Device device = deviceService.claimDevice(deviceClaimRequest);  // Claim the device
         return ResponseEntity.status(HttpStatus.CREATED).body(device);  // Return the claimed device
     }
+
+    // Method to request access to a device (input serial number and owner email)
+    @PostMapping("/requestAccess")
+    public ResponseEntity<DeviceRequestDTO> requestAccess(@Valid @RequestBody AccessDeviceRequest accessDeviceRequest) {
+
+        DeviceAccessPermission savedRequest = deviceService.requestAccess(accessDeviceRequest);
+
+        // Convert to DTO for safe JSON serialization
+        DeviceRequestDTO responseDto = new DeviceRequestDTO(savedRequest);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+    }
+
 }
