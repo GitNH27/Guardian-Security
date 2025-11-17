@@ -12,9 +12,8 @@ public class Device {
     }
 
     // Default constructor
-    public Device(String serialNumber, String deviceSecret, String pairingPassword) {
+    public Device(String serialNumber , String pairingPassword) {
         this.serialNumber = serialNumber;
-        this.deviceSecret = deviceSecret;
         this.pairingPassword = pairingPassword;
         this.status = DeviceStatus.UNCLAIMED;
     }
@@ -25,9 +24,6 @@ public class Device {
 
     @Column(name = "serial_number", nullable = false, unique = true, length = 255)
     private String serialNumber;
-
-    @Column(name = "device_secret", nullable = false, unique = true, length = 255)
-    private String deviceSecret;
 
     @Column(name = "pairing_password", length = 12)
     private String pairingPassword;
@@ -56,14 +52,6 @@ public class Device {
 
     public void setSerialNumber(String serialNumber) {
         this.serialNumber = serialNumber;
-    }
-
-    public String getDeviceSecret() {
-        return deviceSecret;
-    }
-
-    public void setDeviceSecret(String deviceSecret) {
-        this.deviceSecret = deviceSecret;
     }
 
     public String getPairingPassword() {
@@ -114,7 +102,6 @@ public class Device {
 
     public enum DeviceStatus {
         UNCLAIMED,
-        ONLINE,
-        OFFLINE
+        CLAIMED
     }
 }

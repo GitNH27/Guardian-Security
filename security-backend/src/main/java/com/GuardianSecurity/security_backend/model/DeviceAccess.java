@@ -107,6 +107,7 @@ public class DeviceAccess {
     }
 
     public enum Role {
-        OWNER
+        OWNER,
+        MEMBER
     }
 }

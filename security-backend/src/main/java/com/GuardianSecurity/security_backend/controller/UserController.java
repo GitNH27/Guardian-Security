@@ -47,4 +47,4 @@ public class UserController {
         User updatedUser = userService.updateUserPassword(id, request);
         return ResponseEntity.ok(updatedUser);
     }
-    }
+}

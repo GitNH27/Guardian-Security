@@ -1,11 +1,15 @@
 package com.GuardianSecurity.security_backend.model;
 
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority; // Import for UserDetails
+import org.springframework.security.core.userdetails.UserDetails; // Import for UserDetails
 import java.time.LocalDateTime;
+import java.util.Collection; // Import for UserDetails methods
+import java.util.Collections; // Import for Collections.emptyList()
 
 @Entity
 @Table(name = "users")
-public class User {
+public class User implements UserDetails { // <--- ADD THIS: implements UserDetails
 
     // No-argument constructor just for JPA
     public User() {
@@ -41,7 +45,7 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Getters and setters...
+    // Getters and setters (these remain the same)
     public Long getId() {
         return id;
     }
@@ -59,6 +63,14 @@ public class User {
     }
 
     public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    // Renamed from getPasswordHash to getPassword to match UserDetails interface
+    // You can keep getPasswordHash() if other parts of your code use it,
+    // but getPassword() is required by UserDetails.
+    // Ensure this method returns the actual hashed password.
+    public String getPassword() {
         return passwordHash;
     }
 
@@ -90,10 +102,6 @@ public class User {
         this.createdAt = createdAt;
     }
 
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
@@ -111,4 +119,48 @@ public class User {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    // --- START OF UserDetails INTERFACE IMPLEMENTATION ---
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // As discussed, your current schema doesn't have global roles for users.
+        // So, we return an empty list of authorities.
+        // Device-specific roles (OWNER/MEMBER) are checked in service layer logic.
+        return Collections.emptyList();
+    }
+
+    @Override
+    public String getUsername() {
+        // THIS IS THE CRUCIAL PART!
+        // Spring Security will call this to get the user's principal name.
+        // You want this to be the email for your application.
+        return email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        // Implement logic if you have account expiration, otherwise return true.
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        // Implement logic if you have account locking, otherwise return true.
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        // Implement logic if you have password expiration, otherwise return true.
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        // Implement logic if you have account enablement/disablement, otherwise return true.
+        return true;
+    }
+
+    // --- END OF UserDetails INTERFACE IMPLEMENTATION ---
 }
