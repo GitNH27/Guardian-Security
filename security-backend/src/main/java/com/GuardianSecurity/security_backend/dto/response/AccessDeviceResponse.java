@@ -1,9 +1,9 @@
-package com.GuardianSecurity.security_backend.dto.request;
+package com.GuardianSecurity.security_backend.dto.response;
 
 // Import the entity class from the correct package
 import com.GuardianSecurity.security_backend.model.DeviceAccessPermission;
 
-public class DeviceRequestDTO {
+public class AccessDeviceResponse {
 
     private Long id;
     private String requesterEmail;
@@ -11,7 +11,7 @@ public class DeviceRequestDTO {
     private String ownerEmail;
     private String status;
 
-    public DeviceRequestDTO(DeviceAccessPermission request) {
+    public AccessDeviceResponse(DeviceAccessPermission request) {
         this.id = request.getId();
         this.requesterEmail = request.getRequester().getEmail();
         this.deviceSerial = request.getDevice().getSerialNumber();
