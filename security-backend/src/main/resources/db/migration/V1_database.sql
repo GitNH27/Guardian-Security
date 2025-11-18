@@ -26,7 +26,7 @@ CREATE TABLE devices (
 CREATE TABLE device_access (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    device_id BIGINT NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    device_serial_number BIGINT NOT NULL REFERENCES devices(serial_number) ON DELETE CASCADE,
     role VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -37,6 +37,26 @@ CREATE TABLE device_access (
     -- Allowed roles
     CONSTRAINT check_access_role CHECK (role IN ('OWNER', 'MEMBER'))
 );
+
+-- Table for storing user requests to join a device
+CREATE TABLE device_access_requests (
+    id BIGSERIAL PRIMARY KEY,
+
+    requester_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_serial_number BIGINT NOT NULL REFERENCES devices(serial_number) ON DELETE CASCADE,
+    owner_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- A user cannot request access to the same device twice at the same time
+    CONSTRAINT unique_request UNIQUE (requester_id, device_id),
+
+    -- Allowed statuses
+    CONSTRAINT check_request_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED'))
+);
+
 
 -- Create indexes for performance
 CREATE INDEX idx_users_email ON users(email);

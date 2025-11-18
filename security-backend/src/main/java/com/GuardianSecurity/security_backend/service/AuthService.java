@@ -16,14 +16,12 @@ import org.springframework.data.redis.core.RedisTemplate;
 import java.time.Duration;
 
 import org.springframework.stereotype.Service;
-import java.util.Optional;
 
 @Service
 public class AuthService {
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
     private JwtSecurityTask jwtSecurityTask;
-    private VerifyEmail verifyEmail;
 
     // Autowire the configured RedisTemplate
     @Autowired
@@ -32,11 +30,10 @@ public class AuthService {
     private static final String UNVERIFIED_USER_PREFIX = "unverified:"; 
     private static final Duration CODE_EXPIRY = Duration.ofHours(1);
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtSecurityTask jwtSecurityTask, VerifyEmail verifyEmail) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtSecurityTask jwtSecurityTask) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtSecurityTask = jwtSecurityTask;
-        this.verifyEmail = verifyEmail;
     }
 
     // Store unverified user with code in Redis
