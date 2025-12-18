@@ -10,8 +10,11 @@ import com.GuardianSecurity.security_backend.service.AuthService;
 
 import com.GuardianSecurity.security_backend.service.VerifyEmail;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -53,6 +56,15 @@ public class AuthController {
     public ResponseEntity<AuthResponse> loginUser(@Valid @RequestBody LoginRequest request) {
         AuthResponse authResponse = authService.generateAuthResponse(request);
         return ResponseEntity.ok(authResponse);
+    }
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @GetMapping("/test")
+    public boolean test() {
+        return passwordEncoder.matches("N_hummer27", 
+            "$2a$10$WGsgkNQ6UjULGpbu7bJR/eZAPsm900gz3NiOmLgqOlB.DdRt8M1PG"); // paste hash from DB
     }
 
 }

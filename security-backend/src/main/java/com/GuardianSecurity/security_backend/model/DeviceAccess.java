@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(
     name = "device_access",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "device_id"})
+    uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "device_serial_number"})
 )
 public class DeviceAccess {
 
@@ -24,7 +24,7 @@ public class DeviceAccess {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "device_id", nullable = false)
+    @JoinColumn(name = "device_serial_number", nullable = false)
     private Device device;
 
     @Enumerated(EnumType.STRING)
