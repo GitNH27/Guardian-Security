@@ -2,21 +2,15 @@ package com.GuardianSecurity.security_backend.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import lombok.Data; // Provides Getters, Setters, toString, equals, hashCode
+import lombok.NoArgsConstructor; // Provides the default no-arg constructor required by JPA
+// import lombok.AllArgsConstructor; // Omit AllArgsConstructor since you have a custom constructor
 
+@Data // <-- The core Lombok annotation
+@NoArgsConstructor // <-- JPA requirement
 @Entity
 @Table(name = "devices")
 public class Device {
-
-    // No-argument constructor just for JPA
-    public Device() {
-    }
-
-    // Default constructor
-    public Device(String serialNumber , String pairingPassword) {
-        this.serialNumber = serialNumber;
-        this.pairingPassword = pairingPassword;
-        this.status = DeviceStatus.UNCLAIMED;
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,55 +31,15 @@ public class Device {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getSerialNumber() {
-        return serialNumber;
-    }
-
-    public void setSerialNumber(String serialNumber) {
+    
+    // Custom Constructor (Keep this as you need specific initialization)
+    public Device(String serialNumber, String pairingPassword) {
         this.serialNumber = serialNumber;
-    }
-
-    public String getPairingPassword() {
-        return pairingPassword;
-    }
-
-    public void setPairingPassword(String pairingPassword) {
         this.pairingPassword = pairingPassword;
+        this.status = DeviceStatus.UNCLAIMED;
     }
 
-    public DeviceStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(DeviceStatus status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
+    // --- Custom JPA Lifecycle Callbacks (Keep These) ---
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -99,7 +53,8 @@ public class Device {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-
+    
+    // --- Inner Enum (Keep This) ---
     public enum DeviceStatus {
         UNCLAIMED,
         CLAIMED

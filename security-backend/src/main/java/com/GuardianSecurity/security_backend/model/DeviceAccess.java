@@ -2,7 +2,11 @@ package com.GuardianSecurity.security_backend.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data // Generates Getters, Setters, toString, equals, and hashCode
+@NoArgsConstructor // Generates the no-argument constructor required by JPA
 @Entity
 @Table(
     name = "device_access",
@@ -10,21 +14,11 @@ import java.time.LocalDateTime;
 )
 public class DeviceAccess {
 
-    // No-argument constructor for JPA
-    public DeviceAccess() {
-    }
-
-    // Convenience constructor
-    public DeviceAccess(User user, Device device, Role role) {
-        this.user = user;
-        this.device = device;
-        this.role = role == null ? Role.OWNER : role;
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // IMPORTANT: FetchType.LAZY means these entities are only loaded when accessed.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -43,55 +37,15 @@ public class DeviceAccess {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Getters and setters...
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
+    // --- Custom Convenience Constructor (FUNCTIONALITY RETAINED) ---
+    // Lombok does NOT interfere with custom constructors.
+    public DeviceAccess(User user, Device device, Role role) {
         this.user = user;
-    }
-
-    public Device getDevice() {
-        return device;
-    }
-
-    public void setDevice(Device device) {
         this.device = device;
+        this.role = role == null ? Role.OWNER : role;
     }
 
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
+    // --- Custom JPA Lifecycle Callbacks (FUNCTIONALITY RETAINED) ---
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -106,6 +60,7 @@ public class DeviceAccess {
         updatedAt = LocalDateTime.now();
     }
 
+    // --- Inner Enum (FUNCTIONALITY RETAINED) ---
     public enum Role {
         OWNER,
         MEMBER

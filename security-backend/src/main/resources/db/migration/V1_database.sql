@@ -21,7 +21,6 @@ CREATE TABLE devices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT check_device_status CHECK (status IN ('UNCLAIMED', 'CLAIMED'))
 );
-
 -- Create device_access table linking users to devices with roles
 CREATE TABLE device_access (
     id BIGSERIAL PRIMARY KEY,
@@ -37,6 +36,49 @@ CREATE TABLE device_access (
     -- Allowed roles
     CONSTRAINT check_access_role CHECK (role IN ('OWNER', 'MEMBER'))
 );
+
+-- Table for storing user requests to join a device
+CREATE TABLE device_access_requests (
+    id BIGSERIAL PRIMARY KEY,
+
+    requester_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- RECOMMENDED FIX: Reference the PK devices.id
+    device_id BIGINT NOT NULL REFERENCES devices(id) ON DELETE CASCADE, 
+    
+    owner_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Constraint uses device_id (BIGINT)
+    CONSTRAINT unique_request UNIQUE (requester_id, device_id), 
+
+    CONSTRAINT check_request_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED'))
+);
+
+-- Create threat_records table for storing telemetry alerts from IoT devices
+CREATE TABLE threat_records (
+    id BIGSERIAL PRIMARY KEY,
+    
+    -- Device-related fields
+    device_id VARCHAR(255), -- Non-foreign key for faster stream processing; join is often not needed
+    camera_topic VARCHAR(255), -- e.g., 'car/ml/camera/front'
+    
+    -- ML Data
+    object_detected VARCHAR(255), -- e.g., 'Person', 'Animal'
+    threat_level VARCHAR(50) NOT NULL, -- e.g., 'LOW', 'HIGH', 'VERY_HIGH'
+    video_clip_url VARCHAR(512), -- URL to the video evidence
+
+    -- Timestamps
+    recorded_at TIMESTAMP NOT NULL, -- The time the event happened on the device
+    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- The time the backend saved the record
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO devices (id, serial_number, pairing_password, status) VALUES ('1', 'DEV-GAMMA-789-RPI', 'DEMOPASS789', 'UNCLAIMED');
+
 
 -- Create indexes for performance
 CREATE INDEX idx_users_email ON users(email);

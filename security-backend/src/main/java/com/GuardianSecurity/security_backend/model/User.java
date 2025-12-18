@@ -1,21 +1,22 @@
 package com.GuardianSecurity.security_backend.model;
 
 import jakarta.persistence.*;
-import org.springframework.security.core.GrantedAuthority; // Import for UserDetails
-import org.springframework.security.core.userdetails.UserDetails; // Import for UserDetails
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
-import java.util.Collection; // Import for UserDetails methods
-import java.util.Collections; // Import for Collections.emptyList()
+import java.util.Collection;
+import java.util.Collections;
+import lombok.Data;          // Generates Getters, Setters, toString, equals, hashCode
+import lombok.NoArgsConstructor; // Generates no-arg constructor (required by JPA)
+import lombok.RequiredArgsConstructor; // Add this if you want a constructor for all final fields
 
+@Data
+@NoArgsConstructor // Adds the JPA required empty constructor
 @Entity
 @Table(name = "users")
-public class User implements UserDetails { // <--- ADD THIS: implements UserDetails
+public class User implements UserDetails {
 
-    // No-argument constructor just for JPA
-    public User() {
-    }
-
-    // Default constructor
+    // Custom Constructor (Retaing custom logic for initialization)
     public User(String email, String passwordHash, String firstName, String lastName) {
         this.email = email;
         this.passwordHash = passwordHash;
@@ -31,7 +32,8 @@ public class User implements UserDetails { // <--- ADD THIS: implements UserDeta
     private String email;
 
     @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
+    // Lombok will generate getPasswordHash() and setPasswordHash()
+    private String passwordHash; 
 
     @Column(name = "first_name", nullable = false)
     private String firstName;
@@ -45,66 +47,7 @@ public class User implements UserDetails { // <--- ADD THIS: implements UserDeta
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Getters and setters (these remain the same)
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    // Renamed from getPasswordHash to getPassword to match UserDetails interface
-    // You can keep getPasswordHash() if other parts of your code use it,
-    // but getPassword() is required by UserDetails.
-    // Ensure this method returns the actual hashed password.
-    public String getPassword() {
-        return passwordHash;
-    }
-
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    // --- JPA Lifecycle Callbacks (Preserved Logic) ---
 
     @PrePersist
     protected void onCreate() {
@@ -119,46 +62,45 @@ public class User implements UserDetails { // <--- ADD THIS: implements UserDeta
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    
+    // --- START OF UserDetails INTERFACE IMPLEMENTATION (Preserved Logic) ---
 
-    // --- START OF UserDetails INTERFACE IMPLEMENTATION ---
-
+    // REQUIRED by UserDetails: Returns the hashed password
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        // As discussed, your current schema doesn't have global roles for users.
-        // So, we return an empty list of authorities.
-        // Device-specific roles (OWNER/MEMBER) are checked in service layer logic.
-        return Collections.emptyList();
+    public String getPassword() {
+        // We MUST use the field name here, as Lombok generated a getter for passwordHash.
+        return passwordHash; 
     }
 
+    // REQUIRED by UserDetails: Returns the unique identifier used for login
     @Override
     public String getUsername() {
-        // THIS IS THE CRUCIAL PART!
-        // Spring Security will call this to get the user's principal name.
-        // You want this to be the email for your application.
         return email;
     }
 
     @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Current design uses device-specific roles, so return empty list for global authority.
+        return Collections.emptyList();
+    }
+
+    @Override
     public boolean isAccountNonExpired() {
-        // Implement logic if you have account expiration, otherwise return true.
         return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        // Implement logic if you have account locking, otherwise return true.
         return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        // Implement logic if you have password expiration, otherwise return true.
         return true;
     }
 
     @Override
     public boolean isEnabled() {
-        // Implement logic if you have account enablement/disablement, otherwise return true.
         return true;
     }
 
