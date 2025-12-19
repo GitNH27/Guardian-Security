@@ -24,7 +24,7 @@ public class DeviceAccess {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "device_serial_number", nullable = false)
+    @JoinColumn(name = "device_id", nullable = false)
     private Device device;
 
     @Enumerated(EnumType.STRING)
