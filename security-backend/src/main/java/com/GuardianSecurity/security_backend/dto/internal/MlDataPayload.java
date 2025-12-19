@@ -9,6 +9,7 @@ public class MlDataPayload {
     private String level;
     private String object;
     private String url;
+    private String liveFeed;
 
     // --- Getters ---
     public String getLevel() {
@@ -23,6 +24,10 @@ public class MlDataPayload {
         return url;
     }
 
+    public String getLiveFeed() {
+        return liveFeed;
+    }
+
     // --- Setters ---
     public void setLevel(String level) {
         this.level = level;
@@ -34,5 +39,9 @@ public class MlDataPayload {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public void setLiveFeed(String liveFeed) {
+        this.liveFeed = liveFeed;
     }
 }

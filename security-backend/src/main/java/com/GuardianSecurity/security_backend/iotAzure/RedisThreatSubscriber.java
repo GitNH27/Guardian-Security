@@ -6,15 +6,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RedisThreatSubscriber implements MessageListener {
     private static final Logger log = LoggerFactory.getLogger(RedisThreatSubscriber.class);
     private final ObjectMapper objectMapper; // Use ObjectMapper directly
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public RedisThreatSubscriber(ObjectMapper objectMapper) {
+    public RedisThreatSubscriber(ObjectMapper objectMapper, SimpMessagingTemplate messagingTemplate) {
         this.objectMapper = objectMapper;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Override
@@ -25,6 +28,10 @@ public class RedisThreatSubscriber implements MessageListener {
             ThreatRecord threat = objectMapper.readValue(message.getBody(), ThreatRecord.class);
 
             if (threat != null) {
+                // Send the threat alert to WebSocket subscribers
+                messagingTemplate.convertAndSend("/topic/threats", threat);
+
+                // Log the alert for monitoring
                 log.warn("🚨 [AUTOMATED ALERT] Real-time threat processed!");
                 log.warn("   Device ID: {} | Level: {} | Object: {}", 
                          threat.getRawDeviceId(), 

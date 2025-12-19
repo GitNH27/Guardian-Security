@@ -50,35 +50,41 @@ public class ThreatDataProcessor {
     @Transactional
     public void handleMessage(String rawJsonPayload) {
         ThreatRecord record;
+        String liveUrl = null;
         try {
             Map<String, Object> dataMap = objectMapper.readValue(rawJsonPayload, Map.class);
             record = mapToThreatRecord(dataMap);
+
+            if (dataMap.containsKey("ml_data")) {
+            Map<String, Object> ml = (Map<String, Object>) dataMap.get("ml_data");
+            liveUrl = (String) ml.get("liveStreamUrl");
+        }
 
         } catch (IOException e) {
             log.error("Failed to parse incoming JSON payload: {}", rawJsonPayload, e);
             throw new RuntimeException("Invalid JSON format from IoT stream.", e);
         }
 
-        // 3. Persistence: Save the record to PostgreSQL
+        // Save the record to the database
         recordRepository.save(record);
         log.info("Saved Threat Record ID {} for Device: {} | Level: {}", 
                  record.getId(), record.getRawDeviceId(), record.getThreatLevel());
         
         // 4. Notification Logic
-        handleNotifications(record);
+        handleNotifications(record, liveUrl);
     }
 
     /**
      * Determines what notifications or real-time actions are needed.
      */
-    private void handleNotifications(ThreatRecord record) {
+    private void handleNotifications(ThreatRecord record, String liveUrl) {
         if ("VERY_HIGH".equals(record.getThreatLevel()) || "HIGH".equals(record.getThreatLevel())) {
             
             log.error("!!! REAL-TIME ALERT: Threat level {} detected. Publishing to Redis channel: {}",
                       record.getThreatLevel(), REDIS_ALERT_CHANNEL);
             
-            // PUSH ALERT TO REDIS PUB/SUB
-            // The record object is serialized to JSON by GenericJackson2JsonRedisSerializer
+            // Publish the alert to Redis
+            record.setLiveStreamUrl(liveUrl);   // Set live stream URL if available
             redisTemplate.convertAndSend(REDIS_ALERT_CHANNEL, record); 
         }
     }

@@ -11,8 +11,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Data; 
-import lombok.NoArgsConstructor; 
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Data 
@@ -62,6 +64,10 @@ public class ThreatRecord {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // Transient field liveStreamUrl
+    @Transient
+    private String liveStreamUrl;
+
     // --- Custom JPA Lifecycle Callbacks ---
     @PrePersist
     protected void onCreate() {
@@ -76,4 +82,5 @@ public class ThreatRecord {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    
 }
