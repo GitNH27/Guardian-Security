@@ -3,7 +3,7 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
-// import VerificationScreen from '../screens/VerificationScreen'; // We will create this next
+import VerificationScreen from '../screens/VerificationScreen';
 
 const Stack = createStackNavigator();
 
@@ -17,6 +17,7 @@ export default function AuthNavigator() {
     >
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
+      <Stack.Screen name="Verify" component={VerificationScreen} />
       {/* <Stack.Screen name="Verify" component={VerificationScreen} /> */}
     </Stack.Navigator>
   );

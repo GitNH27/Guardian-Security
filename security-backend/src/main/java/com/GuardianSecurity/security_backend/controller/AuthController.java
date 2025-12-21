@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
+@CrossOrigin(origins = "*") // Allow requests from any origin
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

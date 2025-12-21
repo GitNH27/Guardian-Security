@@ -3,6 +3,8 @@ package com.GuardianSecurity.security_backend.service;
 import com.GuardianSecurity.security_backend.model.User;
 import com.GuardianSecurity.security_backend.repository.UserRepository;
 import com.GuardianSecurity.security_backend.security.JwtSecurityTask;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -51,10 +53,18 @@ public class AuthService {
         // Retrieve unverified user from Redis
         String key = UNVERIFIED_USER_PREFIX + request.getEmail();
 
-        // Cast the retrieved object to UnverifiedUserRequest
-        UnverifiedUserRequest storedUnverifiedUser = (UnverifiedUserRequest) redisTemplate.opsForValue().get(key);
+        // 1. Retrieve as a generic Object instead of casting
+        Object rawData = redisTemplate.opsForValue().get(key);
 
-        // Check if user input verification code matches stored code from Redis
+        if (rawData == null) {
+            throw new RuntimeException("Verification expired or user not found.");
+        }
+
+        // 2. Use ObjectMapper to safely convert the LinkedHashMap to your DTO
+        ObjectMapper mapper = new ObjectMapper();
+        UnverifiedUserRequest storedUnverifiedUser = mapper.convertValue(rawData, UnverifiedUserRequest.class);
+
+        // 3. Now the rest of your logic will work perfectly
         if (!storedUnverifiedUser.getVerificationCode().equals(verificationCode)) {
             throw new RuntimeException("Invalid or expired verification code.");
         }
