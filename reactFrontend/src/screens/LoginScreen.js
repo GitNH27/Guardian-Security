@@ -1,29 +1,60 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as SecureStore from 'expo-secure-store'; // 1. Import SecureStore
 import { COLORS, SPACING } from '../styles/theme';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
+import { authService } from '../services/authService';
 
-export default function LoginScreen({ navigation}) {
+export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+const handleLogin = async () => {
     if (!email || !password) {
-      alert("Email and password are required.");
+      Alert.alert("Error", "Email and password are required.");
       return;
     }
-    console.log("Attempting login for:", email);
-    // Logic for your Spring Boot API will go here later
+
+    setLoading(true);
+    try {
+      const loginRequest = { 
+        email: email.trim().toLowerCase(), 
+        password: password 
+      };
+      
+      const authResponse = await authService.login(loginRequest);
+
+      // 1. Defensive Check: Ensure token exists and is a string
+      if (authResponse && authResponse.token) {
+        await SecureStore.setItemAsync('userToken', String(authResponse.token));
+      } else {
+        throw new Error("Server did not return an authentication token.");
+      }
+      
+      // 2. Defensive Check: Ensure userResponse exists before stringifying
+      if (authResponse && authResponse.userResponse) {
+        await SecureStore.setItemAsync('userData', JSON.stringify(authResponse.userResponse));
+      }
+
+      console.log("Login Successful, Token Saved!");
+      navigation.replace('Home'); 
+      
+    } catch (error) {
+      // This will now catch both Network errors and SecureStore validation errors
+      console.error("Login Handler Error:", error);
+      Alert.alert("Login Failed", error.message || "An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
-          
-          {/* Logo Section */}
           <Image 
             source={require('../../assets/logo.png')} 
             style={styles.logo}
@@ -49,11 +80,12 @@ export default function LoginScreen({ navigation}) {
               onChangeText={setPassword}
             />
 
-            <View style={{ marginTop: 10 }}>
-              <AppButton 
-                title="LOG IN" 
-                onPress={handleLogin} 
-              />
+            <View style={{ marginTop: 20 }}>
+              {loading ? (
+                <ActivityIndicator color={COLORS.primary} size="large" />
+              ) : (
+                <AppButton title="LOG IN" onPress={handleLogin} />
+              )}
             </View>
 
             <View style={styles.footer}>

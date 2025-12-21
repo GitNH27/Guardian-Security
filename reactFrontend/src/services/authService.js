@@ -33,15 +33,15 @@ export const authService = {
     }
   },
 
-  // Mirrors: suspend fun login(loginRequest: LoginRequest)
-  login: async (loginRequest) => {
+    // Login function
+    login: async (loginRequest) => {
     try {
-      const response = await apiClient.post('/login', loginRequest);
-      
-      return response.data;
+        const response = await apiClient.post('/login', loginRequest);
+        // This response will contain your JWT token and user info
+        return response.data; 
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || "Login failed";
-      throw new Error(errorMessage);
+        const message = error.response?.data?.message || "Invalid credentials";
+        throw new Error(message);
     }
-  }
+    }
 };
