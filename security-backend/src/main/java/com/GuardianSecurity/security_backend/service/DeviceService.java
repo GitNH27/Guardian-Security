@@ -19,6 +19,7 @@ import com.GuardianSecurity.security_backend.dto.request.DeviceClaimRequest;
 import com.GuardianSecurity.security_backend.dto.request.AccessDeviceRequest;
 import com.GuardianSecurity.security_backend.dto.request.OwnerDecisionRequest;
 import com.GuardianSecurity.security_backend.dto.request.OwnerDecisionRequest.Decision;
+import com.GuardianSecurity.security_backend.dto.response.AccessDeviceResponse;
 import com.GuardianSecurity.security_backend.model.DeviceAccessPermission;
 import com.GuardianSecurity.security_backend.model.DeviceAccessPermission.Status;
 import com.GuardianSecurity.security_backend.repository.DeviceAccessPermissionRepository;
@@ -192,4 +193,22 @@ public class DeviceService {
         dto.put("status", access.getDevice().getStatus().name());
         return dto;
     }
+
+    public List<AccessDeviceResponse> getPendingAccessRequestsForDevice(String serialNumber) {
+        User user = getCurrentUser();
+
+        // Uses your method #4 from the repository
+        List<DeviceAccessPermission> pendingRequests = deviceAccessPermissionRepository
+                .findByOwner_IdAndDevice_SerialNumberAndStatus(
+                    user.getId(), 
+                    serialNumber, 
+                    Status.PENDING
+                );
+
+        return pendingRequests.stream()
+                .map(AccessDeviceResponse::new)
+                .collect(Collectors.toList());
+    }
+
+    
 }

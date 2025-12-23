@@ -12,24 +12,31 @@ export default function DeviceManagementScreen({ navigation }) {
   const [ownerEmail, setOwnerEmail] = useState('');
 
   const handleAction = async (type) => {
+    if (type === 'CLAIM' && !pairingCode) return Alert.alert("Error", "Enter pairing code.");
+    if (type === 'REQUEST' && (!ownerEmail || !serialNumber)) {
+      return Alert.alert("Error", "Serial number and Owner email are required.");
+    }
+
     setLoading(true);
     try {
       if (type === 'CLAIM') {
-        await deviceService.claimDevice({ deviceCode: pairingCode });
-        Alert.alert("Success", "Device claimed! Re-login to refresh your session.", [
+        // DTO: DeviceClaimRequest { deviceCode }
+        await deviceService.claimDevice({ deviceCode: pairingCode.trim() });
+        Alert.alert("Success", "Device claimed! Please re-login.", [
           { text: "OK", onPress: () => navigation.replace('Login') }
         ]);
       } else {
+        // DTO: AccessDeviceRequest { serialNumber, ownerEmail }
         await deviceService.requestAccess({
           serialNumber: serialNumber.trim(),
           ownerEmail: ownerEmail.trim().toLowerCase()
         });
-        Alert.alert("Request Sent", "The owner must approve your access.", [
+        Alert.alert("Request Sent", "Waiting for owner approval.", [
           { text: "OK", onPress: () => navigation.goBack() }
         ]);
       }
     } catch (error) {
-      Alert.alert("Error", error.message || "Action failed.");
+      Alert.alert("Error", error.response?.data?.message || "Action failed.");
     } finally {
       setLoading(false);
     }
@@ -37,6 +44,19 @@ export default function DeviceManagementScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* HEADER WITH BACK BUTTON */}
+      {/* Optimized Header Bar */}
+      <View style={styles.headerBar}>
+        <TouchableOpacity 
+          onPress={() => navigation.replace('Home')} 
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={28} color={COLORS.primary} />
+        </TouchableOpacity>
+        {/* Ensure no text is outside this View */}
+        <View style={{ width: 28 }} /> 
+      </View>
+      {/* SCROLLABLE CONTENT */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.headerTitle}>DEVICE MANAGEMENT</Text>
 
@@ -71,18 +91,35 @@ export default function DeviceManagementScreen({ navigation }) {
         {/* REQUEST SECTION */}
         <View style={styles.section}>
           <Text style={styles.label}>REQUEST ACCESS</Text>
+          
+          {/* NEW: Serial Number Input */}
+          <View style={[styles.inputWrapper, { marginBottom: 15 }]}>
+            <TextInput
+              style={styles.input}
+              placeholder="Device Serial Number"
+              placeholderTextColor="rgba(255,255,255,0.4)"
+              value={serialNumber}
+              onChangeText={setSerialNumber}
+            />
+          </View>
+
+          {/* Existing Owner Email Input */}
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.input}
-              placeholder="Member's Email"
+              placeholder="Owner's Email Address"
+              placeholderTextColor="rgba(255,255,255,0.4)"
               value={ownerEmail}
               onChangeText={setOwnerEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
             />
           </View>
+
           <TouchableOpacity style={styles.goldButton} onPress={() => handleAction('REQUEST')}>
             <Text style={styles.buttonText}>REQUEST ACCESS</Text>
           </TouchableOpacity>
-          <Text style={styles.hintText}>Need access to someone else's device? Ask them for their email.</Text>
+          <Text style={styles.hintText}>Enter the serial number and the owner's registered email to request access.</Text>
         </View>
 
         {loading && <ActivityIndicator color={COLORS.primary} style={{ marginTop: 20 }} />}
@@ -93,7 +130,7 @@ export default function DeviceManagementScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  scrollContent: { padding: SPACING.l, alignItems: 'center' },
+  scrollContent: { padding: SPACING.l, alignItems: 'center', paddingBottom: 50 },
   headerTitle: { color: COLORS.text, fontSize: 20, fontWeight: 'bold', marginBottom: 40, letterSpacing: 1 },
   section: { width: '100%', alignItems: 'center' },
   label: { color: COLORS.primary, fontWeight: 'bold', alignSelf: 'flex-start', marginBottom: 15, fontSize: 16 },

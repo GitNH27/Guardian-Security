@@ -31,7 +31,7 @@ public class DeviceAccessPermission {
 
     // Device being requested
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "device_serial_number", nullable = false)
+    @JoinColumn(name = "device_id", nullable = false)
     private Device device;
 
     // Device owner receiving the request

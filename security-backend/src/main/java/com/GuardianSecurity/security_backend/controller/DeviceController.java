@@ -73,4 +73,12 @@ public class DeviceController {
         return ResponseEntity.status(HttpStatus.OK).body(context);
     }
 
+    // Method to return list of pending access requests for device owned by owner
+    @GetMapping("/pendingRequests")
+    public ResponseEntity<List<AccessDeviceResponse>> getPendingAccessRequests(
+        @RequestParam("serialNumber") String serialNumber
+    ) {
+        List<AccessDeviceResponse> pendingRequests = deviceService.getPendingAccessRequestsForDevice(serialNumber);
+        return ResponseEntity.status(HttpStatus.OK).body(pendingRequests);
+    }
 }

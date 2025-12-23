@@ -60,5 +60,18 @@ export const deviceService = {
       console.error("DeviceService [getDeviceSelectionContext] Error:", error);
       throw error;
     }
+  },
+
+  // src/services/deviceService.js
+  fetchPendingRequests: async (serialNumber) => {
+    try {
+      const response = await apiClient.get('/device/pendingRequests', {
+        params: { serialNumber }  // Correctly sends ?serialNumber=...
+      });
+      return response.data;
+    } catch (error) {
+      console.error("DeviceService Error:", error.response?.data || error.message);
+      throw error;
+    }
   }
 };
