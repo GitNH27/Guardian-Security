@@ -3,26 +3,26 @@ package com.GuardianSecurity.security_backend.dto.response;
 
 public class AuthResponse {
     private String token;
-    private UserResponse user;
+    private UserResponse userResponse;
 
-    public AuthResponse(String token, UserResponse user) {
+    public AuthResponse(String token, UserResponse userResponse) {
         this.token = token;
-        this.user = user;
+        this.userResponse = userResponse;
     }
 
     public String getToken() {
         return token;
     }
 
-    public UserResponse getUser() {
-        return user;
+    public UserResponse getUserResponse() {
+        return userResponse;
     }
 
     public void setToken(String token) {
         this.token = token;
     }
 
-    public void setUser(UserResponse user) {
-        this.user = user;
+    public void setUserResponse(UserResponse userResponse) {
+        this.userResponse = userResponse;
     }
 }

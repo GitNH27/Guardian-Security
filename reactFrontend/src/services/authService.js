@@ -9,7 +9,7 @@ export const authService = {
   sendVerificationCode: async (registerRequest) => {
     try {
       // apiClient.post returns the equivalent of Response<VerifyUserResponse>
-      const response = await apiClient.post('/verifycode', registerRequest);
+      const response = await apiClient.post('/auth/verifycode', registerRequest);
       
       // Axios only enters this block if status is 2xx (response.isSuccessful)
       return response.data; 
@@ -23,7 +23,7 @@ export const authService = {
   // Mirrors: suspend fun verifyRegistration(registerRequest: RegisterRequest, code: String)
   verifyRegistration: async (registerRequest, code) => {
     try {
-      const response = await apiClient.post('/verify-registration', registerRequest, {
+      const response = await apiClient.post('/auth/verify-registration', registerRequest, {
         params: { code } // Add code as query parameter
         });
       return response.data;
@@ -36,7 +36,7 @@ export const authService = {
     // Login function
     login: async (loginRequest) => {
     try {
-        const response = await apiClient.post('/login', loginRequest);
+        const response = await apiClient.post('/auth/login', loginRequest);
         // This response will contain your JWT token and user info
         return response.data; 
     } catch (error) {

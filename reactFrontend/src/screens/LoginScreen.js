@@ -6,6 +6,7 @@ import { COLORS, SPACING } from '../styles/theme';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import { authService } from '../services/authService';
+import { deviceService } from '../services/deviceService';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -37,10 +38,40 @@ const handleLogin = async () => {
       // 2. Defensive Check: Ensure userResponse exists before stringifying
       if (authResponse && authResponse.userResponse) {
         await SecureStore.setItemAsync('userData', JSON.stringify(authResponse.userResponse));
+        console.log("User Data Saved to SecureStore");
+      } else {
+        throw new Error("Server did not return user data.");
       }
 
       console.log("Login Successful, Token Saved!");
-      navigation.replace('Home'); 
+
+      // User Data
+      console.log("User Data:", authResponse.userResponse);
+
+      // ... inside handleLogin ...
+
+      console.log("Fetching device selection context...");
+
+      // CHANGE THIS LINE: Use deviceService instead of authService
+      const deviceContextResponse = await deviceService.getDeviceSelectionContext();
+
+      // Log the actual data to verify structure
+      console.log("Device Selection Context:", deviceContextResponse);
+
+      // Match the 'action' key from your Spring Boot Map response
+      if (deviceContextResponse.action === "Auto-Redirect-Device") {
+          // Save the specific device object returned by the backend
+          await SecureStore.setItemAsync('activeDevice', JSON.stringify(deviceContextResponse.device));
+          navigation.replace('Home');
+      } 
+      else if (deviceContextResponse.action === "SHOW_PICKER") {
+          // Navigate to the selection screen with the list of devices
+          navigation.replace('DeviceSelectionScreen', { devices: deviceContextResponse.devices });
+      } 
+      else {
+          // Fallback for new users (REDIRECT_TO_HOME_NEW or similar)
+          navigation.replace('DeviceManagement');
+      }
       
     } catch (error) {
       // This will now catch both Network errors and SecureStore validation errors

@@ -2,6 +2,11 @@ package com.GuardianSecurity.security_backend.service;
 
 import com.GuardianSecurity.security_backend.model.User;
 import com.GuardianSecurity.security_backend.repository.UserRepository;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.security.core.Authentication;
 import com.GuardianSecurity.security_backend.model.DeviceAccess.Role;
 
@@ -23,6 +28,9 @@ import com.GuardianSecurity.security_backend.service.helper.OwnerDeviceValidatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class DeviceService {
@@ -152,6 +160,36 @@ public class DeviceService {
         return accessRequest;
     }
 
+    // Devices owned or accessible by the authenticated user.
+    // Goal: Check devices. if none -> Redirect to claim device page. if one -> Redirect to device page, if more -> Redirect to device list page
+    public Map<String, Object> getDeviceSelectionContext() {
+        User user = getCurrentUser();
+        
+        List<DeviceAccess> accessList = deviceAccessRepository.findAllByUserId(user.getId());
 
+        Map<String, Object> context = new HashMap<>();
+        
+        if (accessList.isEmpty()) {
+            context.put("action", "Redirect-Claim-Request"); // React Native will show "Pair/Request"
+        } else if (accessList.size() == 1) {
+            context.put("action", "Auto-Redirect-Device");
+            context.put("device", convertToSelectionDto(accessList.get(0)));
+        } else {
+            context.put("action", "Select-Device");
+            context.put("devices", accessList.stream()
+                    .map(this::convertToSelectionDto)
+                    .collect(Collectors.toList()));
+        }
+        
+        return context;
+    }
 
+    private Map<String, Object> convertToSelectionDto(DeviceAccess access) {
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("deviceId", access.getDevice().getId());
+        dto.put("serialNumber", access.getDevice().getSerialNumber());
+        dto.put("role", access.getRole().name());
+        dto.put("status", access.getDevice().getStatus().name());
+        return dto;
+    }
 }

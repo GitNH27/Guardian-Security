@@ -56,7 +56,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> loginUser(@Valid @RequestBody LoginRequest request) {
         AuthResponse authResponse = authService.generateAuthResponse(request);
-        return ResponseEntity.ok(authResponse);
+        return ResponseEntity.status(HttpStatus.OK).body(authResponse);
     }
 
     @Autowired

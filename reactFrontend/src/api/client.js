@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 
 const apiClient = axios.create({
   // Use 10.0.2.2 for Android Emulator, localhost for iOS
-  baseURL: Platform.OS === 'android' ? 'http://10.0.2.2:8080/api/auth' : 'http://localhost:8080/api/auth',
+  baseURL: Platform.OS === 'android' ? 'http://10.0.2.2:8080/api' : 'http://localhost:8080/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -13,7 +13,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     // 1. Check if the request is for an authentication route
-    const isAuthRoute = config.url.includes('/auth') || config.url.includes('/login');
+    const isAuthRoute = config.url.startsWith('/auth');
 
     // 2. Only look for a token if it's NOT an auth route
     if (!isAuthRoute) {

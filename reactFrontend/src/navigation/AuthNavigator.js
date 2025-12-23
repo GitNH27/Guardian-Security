@@ -5,21 +5,26 @@ import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import VerificationScreen from '../screens/VerificationScreen';
 import HomeScreen from '../screens/HomeScreen';
+import DeviceSelectionScreen from '../screens/DeviceSelectionScreen';
+import DeviceManagementScreen from '../screens/DeviceManagementScreen';
 
 const Stack = createStackNavigator();
 
 export default function AuthNavigator() {
   return (
     <Stack.Navigator
+    //   initialRouteName="Home" // <--- Add this temporarily
       screenOptions={{
-        headerShown: false, // Hides the default white header bar
-        cardStyle: { backgroundColor: '#2C2C2C' } // Matches your DarkBackground
+        headerShown: false,
+        cardStyle: { backgroundColor: '#2C2C2C' }
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
       <Stack.Screen name="Verify" component={VerificationScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="DeviceManagement" component={DeviceManagementScreen} />
+      <Stack.Screen name="DeviceSelectionScreen" component={DeviceSelectionScreen} />
     </Stack.Navigator>
   );
 }

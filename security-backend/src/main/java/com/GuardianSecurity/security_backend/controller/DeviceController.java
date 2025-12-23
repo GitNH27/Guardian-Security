@@ -20,6 +20,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
 import jakarta.validation.Valid;
 
 @RestController
@@ -27,6 +29,7 @@ import jakarta.validation.Valid;
 public class DeviceController {
 
     private final DeviceService deviceService;
+
 
     public DeviceController(DeviceService deviceService) {
         this.deviceService = deviceService;
@@ -61,6 +64,13 @@ public class DeviceController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
 
+    }
+
+    // Devices owned or accessible by the authenticated user (For page redirection logic - depending on number of devices)
+    @GetMapping("/myDevices")
+    public ResponseEntity<Map<String, Object>> getDeviceSelectionContext() {
+        Map<String, Object> context = deviceService.getDeviceSelectionContext();
+        return ResponseEntity.status(HttpStatus.OK).body(context);
     }
 
 }

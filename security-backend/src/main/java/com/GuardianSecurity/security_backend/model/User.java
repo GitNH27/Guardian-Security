@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 import lombok.Data;          // Generates Getters, Setters, toString, equals, hashCode
 import lombok.NoArgsConstructor; // Generates no-arg constructor (required by JPA)
-import lombok.RequiredArgsConstructor; // Add this if you want a constructor for all final fields
+import java.util.List;
 
 @Data
 @NoArgsConstructor // Adds the JPA required empty constructor
@@ -23,6 +23,9 @@ public class User implements UserDetails {
         this.firstName = firstName;
         this.lastName = lastName;
     }
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<DeviceAccess> deviceAccesses;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
