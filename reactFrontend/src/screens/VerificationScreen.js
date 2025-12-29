@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SPACING } from '../styles/theme';
+import { COLORS } from '../styles/theme';
+import { sharedStyles } from '../styles/sharedStyles';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import { authService } from '../services/authService';
@@ -39,20 +40,20 @@ export default function VerificationScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.title}>VERIFY ACCOUNT</Text>
-        <Text style={styles.subtitle}>
+    <SafeAreaView style={sharedStyles.safeArea}>
+      <View style={[sharedStyles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={sharedStyles.title}>VERIFY ACCOUNT</Text>
+        <Text style={[sharedStyles.subtitle, { textAlign: 'center', marginTop: SPACING.s }]}>
           Enter the code sent to your email
         </Text>
 
-        <View style={styles.form}>
+        <View style={{ width: '100%', marginTop: SPACING.xl }}>
           <AppInput 
-            icon="key-outline" // Matches the VpnKey icon from your Kotlin code
+            icon="key-outline"
             placeholder="Verification Code" 
             value={code}
             onChangeText={setCode}
-            keyboardType="number-pad" // Better UX for numeric codes
+            keyboardType="number-pad"
           />
 
           <View style={{ marginTop: SPACING.m }}>
@@ -70,27 +71,3 @@ export default function VerificationScreen({ route, navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background },
-  container: { 
-    flex: 1, 
-    padding: SPACING.l, 
-    alignItems: 'center', 
-    justifyContent: 'center' 
-  },
-  title: { 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    color: COLORS.text, 
-    letterSpacing: 2 
-  },
-  subtitle: { 
-    fontSize: 14, 
-    color: COLORS.textHint, 
-    marginTop: SPACING.s,
-    marginBottom: SPACING.xl,
-    textAlign: 'center'
-  },
-  form: { width: '100%' },
-});

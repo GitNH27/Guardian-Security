@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SPACING } from '../styles/theme';
+import { COLORS } from '../styles/theme';
+import { sharedStyles } from '../styles/sharedStyles';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import { authService } from '../services/authService';
@@ -43,92 +44,70 @@ const handleGetCode = async () => {
 };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.container}>
-
-          {/* Top Center Logo */}
-          <Image 
-            source={require('../../assets/logo.png')} 
-            style={styles.logo}
-            resizeMode="contain"
-          />
-
-          <Text style={styles.title}>CREATE ACCOUNT</Text>
-          
-          <View style={styles.form}>
-            <AppInput 
-              icon="person-outline" 
-              placeholder="First Name" 
-              value={firstName}
-              onChangeText={setFirstName}
-            />
-            <AppInput 
-              icon="person-outline" 
-              placeholder="Last Name" 
-              value={lastName}
-              onChangeText={setLastName}
-            />
-            <AppInput 
-              icon="mail-outline" 
-              placeholder="Email" 
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <AppInput 
-              icon="lock-closed-outline" 
-              placeholder="Password" 
-              secureTextEntry={false} // Typing is now visible
-              value={password}
-              onChangeText={setPassword}
+  <SafeAreaView style={sharedStyles.safeArea}>
+        <ScrollView contentContainerStyle={sharedStyles.centeredScrollContainer}>
+          <View style={{ alignItems: 'center', width: '100%' }}>
+            
+            <Image 
+              source={require('../../assets/logo.png')} 
+              style={sharedStyles.logo}
+              resizeMode="contain"
             />
 
-            <View style={{ marginTop: 20 }}>
-              {/* 5. Show loading spinner while API is working */}
-              {loading ? (
-                <ActivityIndicator color={COLORS.primary} size="large" />
-              ) : (
-                <AppButton 
-                  title="GET VERIFICATION CODE" 
-                  onPress={handleGetCode} 
-                />
-              )}
+            <Text style={sharedStyles.title}>CREATE ACCOUNT</Text>
+            
+            <View style={{ width: '100%', marginTop: 40 }}>
+              <AppInput 
+                icon="person-outline" 
+                placeholder="First Name" 
+                value={firstName}
+                onChangeText={setFirstName}
+              />
+              <AppInput 
+                icon="person-outline" 
+                placeholder="Last Name" 
+                value={lastName}
+                onChangeText={setLastName}
+              />
+              <AppInput 
+                icon="mail-outline" 
+                placeholder="Email" 
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
+              <AppInput 
+                icon="lock-closed-outline" 
+                placeholder="Password" 
+                secureTextEntry={true} // Changed to true for security
+                value={password}
+                onChangeText={setPassword}
+              />
+
+              <View style={{ marginTop: 20 }}>
+                {loading ? (
+                  <ActivityIndicator color={COLORS.primary} size="large" />
+                ) : (
+                  <AppButton 
+                    title="GET VERIFICATION CODE" 
+                    onPress={handleGetCode} 
+                  />
+                )}
+              </View>
+
+              <View style={{ flexDirection: 'row', marginTop: 30, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: COLORS.text, fontSize: 14, opacity: 0.7 }}>
+                  Already have an account? 
+                </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                  <Text style={{ color: COLORS.primary, fontWeight: 'bold', fontSize: 16, marginLeft: 4 }}>
+                    Login
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-
-            <TouchableOpacity 
-              style={styles.footerLink} 
-              onPress={() => navigation.navigate('Login')}
-            >
-              <Text style={styles.footerText}>
-                Already have an account? <Text style={styles.goldText}>Login</Text>
-              </Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background },
-  scrollContainer: { flexGrow: 1, justifyContent: 'center' },
-  container: { padding: SPACING.l, alignItems: 'center' },
-  logo: {
-    width: 150,
-    height: 150,
-    marginBottom: SPACING.m,
-  },
-  title: { 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    color: COLORS.text, 
-    letterSpacing: 2,
-    marginBottom: SPACING.xl 
-  },
-  form: { width: '100%' },
-  footerLink: { marginTop: 30, alignItems: 'center' },
-  footerText: { color: COLORS.text, fontSize: 14 },
-  goldText: { color: COLORS.primary, fontWeight: 'bold' }
-});
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
