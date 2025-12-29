@@ -28,8 +28,9 @@ public class RedisThreatSubscriber implements MessageListener {
             ThreatRecord threat = objectMapper.readValue(message.getBody(), ThreatRecord.class);
 
             if (threat != null) {
-                // Send the threat alert to WebSocket subscribers
-                messagingTemplate.convertAndSend("/topic/threats", threat);
+                // Send the threat alert to WebSocket subscribers (send messages to a specific device topic instead of a global one. This ensures data privacy.)
+                messagingTemplate.convertAndSend(
+                    "/topic/threats/" + threat.getRawDeviceId(), threat);
 
                 // Log the alert for monitoring
                 log.warn("🚨 [AUTOMATED ALERT] Real-time threat processed!");

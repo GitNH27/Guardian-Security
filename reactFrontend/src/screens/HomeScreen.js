@@ -10,14 +10,27 @@ import HomeHeader from '../components/HomeHeader';
 import { RequestDropdown } from '../components/RequestDropdown';
 import { deviceService } from '../services/deviceService';
 import { StatusBanner } from '../components/StatusBanner';
+import { useThreatMonitor } from '../hooks/useThreatMonitor';
 
 export default function HomeScreen({ navigation }) {
   const [userName, setUserName] = useState('User');
-  const [threatLevel, setThreatLevel] = useState('Low');
   const [role, setRole] = useState('USER');
   const [hasDevice, setHasDevice] = useState(false);
   const [activeDevice, setActiveDevice] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [allDevices, setAllDevices] = useState([]);
+
+  // ... inside HomeScreen component
+  const memoizedIds = React.useMemo(() => allDevices.map(d => String(d.deviceId)), [allDevices]);
+  const fleetThreats = useThreatMonitor(memoizedIds);
+
+  // Access the active device threat data using the normalized fields from our hook
+  const activeThreatData = activeDevice ? fleetThreats[activeDevice.deviceId] : null;
+
+  // Use the normalized 'level' and 'isThreat' properties
+  const currentThreatLevel = activeThreatData?.level || 'Low';
+  const isActiveThreat = activeThreatData?.isThreat || false;
 
   useFocusEffect(
     React.useCallback(() => {
@@ -36,6 +49,8 @@ export default function HomeScreen({ navigation }) {
           const response = await deviceService.getDeviceSelectionContext();
           
           if (response.devices && response.devices.length > 0) {
+            setAllDevices(response.devices);  // Update all devices for threat monitoring
+
             const storedActiveId = await SecureStore.getItemAsync('activeDeviceId');
 
             let selectedDevice =
@@ -116,8 +131,8 @@ export default function HomeScreen({ navigation }) {
         {/* Status Banner */}
         <StatusBanner 
           status="System Status:" 
-          message={hasDevice ? "Guardian Active" : "Offline"}
-          type={!hasDevice ? 'offline' : (threatLevel === 'High' ? 'error' : 'info')}
+          message={hasDevice ? (isActiveThreat ? `THREAT: ${activeThreatData.object}` : "Guardian Active") : "Offline"}
+          type={!hasDevice ? 'offline' : (isActiveThreat ? 'error' : 'success')}
         />
 
         {/* Main Grid using Modular Cards */}
@@ -131,7 +146,7 @@ export default function HomeScreen({ navigation }) {
           <DashboardCard 
             title="Threat Status" 
             icon="shield-checkmark-outline" 
-            onPress={() => Alert.alert("Status", threatLevel)} 
+            onPress={() => Alert.alert("Status", `Level: ${currentThreatLevel}`)} 
             disabled={!hasDevice}
           />
           
@@ -146,10 +161,20 @@ export default function HomeScreen({ navigation }) {
             title="Live Feed"
             icon="videocam-outline"
             onPress={() => navigation.navigate('LiveView')}
-            disabled={!hasDevice || threatLevel !== 'High'}
-            color="#FF4444"
+            // Now activates automatically when a Person/Object is detected
+            disabled={!hasDevice || !isActiveThreat}
+            color={isActiveThreat ? "#FF4444" : COLORS.primary}
           />
         </View>
+
+        {/* Fleet Alert Notification (Optional) */}
+        {Object.keys(fleetThreats).length > 0 && Object.entries(fleetThreats).some(([id, data]) => id !== activeDevice?.deviceId?.toString() && data.ml_data?.level === 'HIGH') && (
+           <View style={[sharedStyles.card, { marginTop: 20, borderColor: '#FF4444', backgroundColor: 'rgba(255, 68, 68, 0.1)' }]}>
+             <Text style={{ color: '#FF4444', fontWeight: 'bold', textAlign: 'center' }}>
+               🚨 ALERT: High Threat on another vehicle!
+             </Text>
+           </View>
+        )}
 
         {/* Device Management Section */}
         <View style={{ marginTop: 25 }}>
