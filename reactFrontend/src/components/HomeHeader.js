@@ -14,9 +14,17 @@ export default function HomeHeader({ userName, activeDevice, hasDevice, role, on
       <View style={{ flex: 1 }}>
         <Text style={sharedStyles.headerSubtitle}>Welcome Home,</Text>
         <Text style={sharedStyles.headerTitle}>{userName}!</Text>
-        <Text style={[sharedStyles.label, { fontSize: 11, marginTop: 4 }, !hasDevice && { color: '#888' }]}>
-          {hasDevice ? `${activeDevice?.serialNumber} • ${role}` : "No Active Device"}
+        <Text style={[
+            sharedStyles.label,
+            { fontSize: 11, marginTop: 4 },
+            !hasDevice && { color: '#888' }
+        ]}
+        >
+        {hasDevice && activeDevice
+            ? `${activeDevice.serialNumber} • ${role}`
+            : 'No Active Device'}
         </Text>
+
       </View>
 
       {hasDevice && (

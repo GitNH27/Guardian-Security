@@ -65,7 +65,7 @@ const handleLogin = async () => {
           await SecureStore.setItemAsync('activeDevice', JSON.stringify(deviceContextResponse.device));
           navigation.replace('Home');
       } 
-      else if (deviceContextResponse.action === "SHOW_PICKER") {
+      else if (deviceContextResponse.action === "Select-Device") {
           // Navigate to the selection screen with the list of devices
           navigation.replace('DeviceSelectionScreen', { devices: deviceContextResponse.devices });
       } 

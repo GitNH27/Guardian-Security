@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { COLORS } from '../styles/theme';
@@ -8,6 +9,7 @@ import DashboardCard from '../components/DashboardCard';
 import HomeHeader from '../components/HomeHeader';
 import { RequestDropdown } from '../components/RequestDropdown';
 import { deviceService } from '../services/deviceService';
+import { StatusBanner } from '../components/StatusBanner';
 
 export default function HomeScreen({ navigation }) {
   const [userName, setUserName] = useState('User');
@@ -17,35 +19,58 @@ export default function HomeScreen({ navigation }) {
   const [activeDevice, setActiveDevice] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadSessionData = async () => {
-      try {
-        setLoading(true);
-        const userValue = await SecureStore.getItemAsync('userData');
-        if (userValue) {
-          const user = JSON.parse(userValue);
-          setUserName(user.firstName || 'User');
-        }
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadSessionData = async () => {
+        try {
+          setLoading(true);
 
-        const deviceValue = await SecureStore.getItemAsync('activeDevice');
-        if (deviceValue) {
-          const device = JSON.parse(deviceValue);
-          setActiveDevice(device);
-          setRole(device.role || 'USER');
-          setHasDevice(true);
-        } else {
-          setHasDevice(false);
-          setActiveDevice(null);
-          setRole('USER');
+          // Load user info (unchanged)
+          const userValue = await SecureStore.getItemAsync('userData');
+          if (userValue) {
+            const user = JSON.parse(userValue);
+            setUserName(user.firstName || 'User');
+          }
+
+          // 🔥 ALWAYS refresh devices from backend
+          const response = await deviceService.getDeviceSelectionContext();
+          
+          if (response.devices && response.devices.length > 0) {
+            const storedActiveId = await SecureStore.getItemAsync('activeDeviceId');
+
+            let selectedDevice =
+              response.devices.find(
+                d => d.deviceId.toString() === storedActiveId
+              ) || response.devices[0]; // fallback only
+
+            setActiveDevice(selectedDevice);
+            setRole(selectedDevice.role || 'USER');
+            setHasDevice(true);
+
+            // Keep ID in sync (important when new device is added)
+            await SecureStore.setItemAsync(
+              'activeDeviceId',
+              selectedDevice.deviceId.toString()
+            );
+          } else {
+            setActiveDevice(null);
+            setRole('USER');
+            setHasDevice(false);
+            await SecureStore.deleteItemAsync('activeDeviceId');
+          }
+
+
+        } catch (e) {
+          console.error('Failed to refresh home context', e);
+        } finally {
+          setLoading(false);
         }
-      } catch (e) {
-        console.error("Failed to load session data", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadSessionData();
-  }, []);
+      };
+
+      loadSessionData();
+    }, [])
+  );
+
 
   const handleLogout = async () => {
     try {
@@ -88,14 +113,12 @@ export default function HomeScreen({ navigation }) {
           onSwitchDevice={handleSwitchDevice}
         />
 
-        {/* DASHBOARD STATUS BANNER (From Snippet 1) */}
-        <View style={[sharedStyles.statusBanner, !hasDevice && { borderLeftColor: '#444' }]}>
-          <Text style={{ color: COLORS.text, fontWeight: '600' }}>System Status: 
-            <Text style={{ color: !hasDevice ? '#666' : (threatLevel === 'High' ? '#FF4444' : COLORS.primary) }}>
-              {hasDevice ? " Guardian Active" : " Offline"}
-            </Text>
-          </Text>
-        </View>
+        {/* Status Banner */}
+        <StatusBanner 
+          status="System Status:" 
+          message={hasDevice ? "Guardian Active" : "Offline"}
+          type={!hasDevice ? 'offline' : (threatLevel === 'High' ? 'error' : 'info')}
+        />
 
         {/* Main Grid using Modular Cards */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>

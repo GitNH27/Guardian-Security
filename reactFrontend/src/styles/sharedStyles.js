@@ -171,14 +171,16 @@ export const sharedStyles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  // Status Banner
-  statusBanner: {
-    backgroundColor: '#1A1A1A',
-    padding: SPACING.m,
-    borderRadius: 10,
-    borderLeftWidth: 4,
-    marginBottom: SPACING.l,
-  },
+    // Status Banner
+    statusBanner: {
+        backgroundColor: '#1A1A1A',
+        padding: SPACING.m,
+        borderRadius: 10,
+        borderLeftWidth: 4,
+        marginBottom: SPACING.l,
+        flexDirection: 'row', // Add this
+        alignItems: 'center',  // Add this
+    },
 
   // Add these to your sharedStyles.js
   grid: {

@@ -22,8 +22,8 @@ export default function DeviceManagementScreen({ navigation }) {
       if (type === 'CLAIM') {
         // DTO: DeviceClaimRequest { deviceCode }
         await deviceService.claimDevice({ deviceCode: pairingCode.trim() });
-        Alert.alert("Success", "Device claimed! Please re-login.", [
-          { text: "OK", onPress: () => navigation.replace('Login') }
+        Alert.alert("Success", "Device claimed!", [
+          { text: "OK", onPress: () => navigation.replace('Home') }
         ]);
       } else {
         // DTO: AccessDeviceRequest { serialNumber, ownerEmail }
