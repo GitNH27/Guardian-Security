@@ -63,7 +63,7 @@ CREATE TABLE threat_records (
     id BIGSERIAL PRIMARY KEY,
     
     -- Device-related fields
-    device_id VARCHAR(255), -- Non-foreign key for faster stream processing; join is often not needed
+    device_id BIGINT NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
     camera_topic VARCHAR(255), -- e.g., 'car/ml/camera/front'
     
     -- ML Data

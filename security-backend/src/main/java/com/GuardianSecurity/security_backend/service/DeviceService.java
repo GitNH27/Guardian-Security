@@ -210,5 +210,15 @@ public class DeviceService {
                 .collect(Collectors.toList());
     }
 
-    
+    // Reusable security check method
+    public void validateUserAccessToDevice(String serialNumber) {
+        User user = getCurrentUser();
+
+        Optional<DeviceAccess> accessOpt = deviceAccessRepository
+                .findByUserIdAndDeviceSerialNumber(user.getId(), serialNumber);
+
+        if (accessOpt.isEmpty()) {
+            throw new IllegalArgumentException("User does not have access to the device.");
+        }
+    }
 }
