@@ -140,9 +140,9 @@ public class ThreatDataProcessor {
         String recordedAtString = (String) dataMap.get("recorded_at");
         // NOTE: You may need a specific DateTimeFormatter if the string isn't standard ISO.
         if (recordedAtString != null) {
-            record.setRecordedAt(LocalDateTime.parse(recordedAtString));
+            record.setCreatedAt(LocalDateTime.parse(recordedAtString));
         } else {
-            record.setRecordedAt(LocalDateTime.now());
+            record.setCreatedAt(LocalDateTime.now());
         }
 
         // --- 3. SAFE MAPPING OF NESTED OBJECT ---
@@ -152,7 +152,7 @@ public class ThreatDataProcessor {
                 MlDataPayload mlData = objectMapper.convertValue(rawMlData, MlDataPayload.class);
                 record.setThreatLevel(mlData.getLevel());
                 record.setObjectDetected(mlData.getObject()); 
-                record.setVideoClipUrl(mlData.getUrl());
+                record.setPhotoURL(mlData.getUrl());
             } catch (IllegalArgumentException e) {
                 log.error("Failed to map inner ML data payload.", e);
                 throw new RuntimeException("Malformed ML data structure received.", e);

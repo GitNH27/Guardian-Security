@@ -52,11 +52,11 @@ public class ThreatRecord {
 
     // --- Evidence & Metadata ---
     
-    @Column(name = "video_clip_url", length = 512)
-    private String videoClipUrl; 
+    @Column(name = "photo_url", length = 512)
+    private String photoURL;
     
-    @Column(name = "recorded_at", nullable = false)
-    private LocalDateTime recordedAt; 
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt; 
     
     @Column(name = "processed_at")
     private LocalDateTime processedAt;

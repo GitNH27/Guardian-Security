@@ -9,6 +9,7 @@ export const useThreatMonitor = (rawDeviceIds = []) => {
   const [threats, setThreats] = useState({});
   const clientRef = useRef(null);
   const subscriptionsRef = useRef({}); 
+  const ttlTimersRef = useRef({});
 
   const deviceIds = Array.isArray(rawDeviceIds) 
     ? rawDeviceIds.map(id => String(id)) 
@@ -23,41 +24,65 @@ export const useThreatMonitor = (rawDeviceIds = []) => {
         console.log(`📡 Subscribing to: /topic/threats/${id}`);
         
         subscriptionsRef.current[id] = client.subscribe(`/topic/threats/${id}`, (msg) => {
-          // 🛑 DEBUG LOG: See the raw data from Spring
-          console.log(`📥 [STOMP RECEIVE] Device ${id} raw payload:`, msg.body);
+        console.log(`📥 [STOMP RECEIVE] Device ${id} raw payload:`, msg.body);
 
-          try {
+        try {
             const payload = JSON.parse(msg.body);
-            
-            // 🔍 INSPECTION LOG: See the parsed object keys
-            console.log(`📋 [PARSED DATA] Keys detected:`, Object.keys(payload));
 
-            setThreats(prev => {
             const normalizedPayload = {
-                ...payload,
-                // Normalize keys so the UI doesn't have to guess
-                level: payload.threatLevel, 
-                deviceId: payload.rawDeviceId,
-                object: payload.objectDetected,
-                isThreat: payload.threatLevel === 'HIGH' || payload.threatLevel === 'CRITICAL'
+            ...payload,
+            level: payload.threatLevel,
+            deviceId: payload.rawDeviceId,
+            object: payload.objectDetected,
+            isThreat: payload.threatLevel === 'HIGH',
+            lastUpdated: Date.now()
             };
-            
-            return { ...prev, [id]: normalizedPayload };
-            });
-          } catch (e) {
+
+            // 🔥 Update threat immediately
+            setThreats(prev => ({
+            ...prev,
+            [id]: normalizedPayload
+            }));
+
+            // ⏱️ CLEAR existing TTL timer (if any)
+            if (ttlTimersRef.current[id]) {
+            clearTimeout(ttlTimersRef.current[id]);
+            }
+
+            // ⏳ START new TTL timer
+            ttlTimersRef.current[id] = setTimeout(() => {
+            console.log(`🟢 TTL expired → Downgrading device ${id} to LOW`);
+
+            setThreats(prev => ({
+                ...prev,
+                [id]: {
+                ...prev[id],
+                level: 'LOW',
+                isThreat: false
+                }
+            }));
+            }, 15000); // 15 seconds
+
+        } catch (e) {
             console.error("❌ Payload parse error", e);
-          }
+        }
         });
+
       }
     });
 
-    // Unsubscribe logic remains the same
     Object.keys(subscriptionsRef.current).forEach(id => {
-      if (!ids.includes(id)) {
+    if (!ids.includes(id)) {
         console.log(`🔌 Unsubscribing from: ${id}`);
         subscriptionsRef.current[id].unsubscribe();
+
+        if (ttlTimersRef.current[id]) {
+        clearTimeout(ttlTimersRef.current[id]);
+        delete ttlTimersRef.current[id];
+        }
+
         delete subscriptionsRef.current[id];
-      }
+    }
     });
   };
 
@@ -113,11 +138,15 @@ export const useThreatMonitor = (rawDeviceIds = []) => {
 
     useEffect(() => {
         return () => {
-            if (clientRef.current) {
-                console.log('💤 Deactivating WebSocket Connection (Unmount)');
-                clientRef.current.deactivate();
-                clientRef.current = null;
-            }
+        if (clientRef.current) {
+            console.log('💤 Deactivating WebSocket Connection (Unmount)');
+            clientRef.current.deactivate();
+            clientRef.current = null;
+        }
+
+        // 🧹 CLEANUP: Clear all active TTL timers on unmount
+        Object.values(ttlTimersRef.current).forEach(timer => clearTimeout(timer));
+        ttlTimersRef.current = {};
         };
     }, []);
 

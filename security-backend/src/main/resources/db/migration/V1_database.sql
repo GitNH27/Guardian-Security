@@ -69,10 +69,10 @@ CREATE TABLE threat_records (
     -- ML Data
     object_detected VARCHAR(255), -- e.g., 'Person', 'Animal'
     threat_level VARCHAR(50) NOT NULL, -- e.g., 'LOW', 'HIGH', 'VERY_HIGH'
-    video_clip_url VARCHAR(512), -- URL to the video evidence
+    photo_url VARCHAR(512), -- URL to the BLOB storage location of the photo
 
     -- Timestamps
-    recorded_at TIMESTAMP NOT NULL, -- The time the event happened on the device
+    created_at TIMESTAMP NOT NULL, -- The time the event happened on the device
     processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- The time the backend saved the record
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
