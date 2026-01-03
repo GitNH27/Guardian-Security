@@ -67,6 +67,10 @@ export default function HomeScreen({ navigation }) {
               'activeDeviceId',
               selectedDevice.deviceId.toString()
             );
+            // Save the serial number so the Logs screen can use it
+            await SecureStore.setItemAsync(
+              'activeDeviceSerial',
+              selectedDevice.serialNumber);
           } else {
             setActiveDevice(null);
             setRole('USER');
@@ -153,7 +157,7 @@ export default function HomeScreen({ navigation }) {
           <DashboardCard 
             title="Activity Logs" 
             icon="list-outline" 
-            onPress={() => navigation.navigate('Logs')} 
+            onPress={() => navigation.navigate('ThreatLogs')} 
             disabled={!hasDevice}
           />
           

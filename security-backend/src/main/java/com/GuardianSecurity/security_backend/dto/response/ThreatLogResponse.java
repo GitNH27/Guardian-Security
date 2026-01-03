@@ -7,14 +7,16 @@ public class ThreatLogResponse {
     private String threatLevel;
     private String objectDetected;
     private String cameraTopic;
+    private String photoUrl;
     private LocalDateTime timestamp;
 
     // IMPORTANT: You need this constructor
-    public ThreatLogResponse(Long id, String threatLevel, String objectDetected, String cameraTopic, LocalDateTime timestamp) {
+    public ThreatLogResponse(Long id, String threatLevel, String objectDetected, String cameraTopic, String photoUrl, LocalDateTime timestamp) {
         this.id = id;
         this.threatLevel = threatLevel;
         this.objectDetected = objectDetected;
         this.cameraTopic = cameraTopic;
+        this.photoUrl = photoUrl;
         this.timestamp = timestamp;
     }
 
@@ -23,5 +25,6 @@ public class ThreatLogResponse {
     public String getThreatLevel() { return threatLevel; }
     public String getObjectDetected() { return objectDetected; }
     public String getCameraTopic() { return cameraTopic; }
+    public String getPhotoUrl() { return photoUrl; }
     public LocalDateTime getTimestamp() { return timestamp; }
 }

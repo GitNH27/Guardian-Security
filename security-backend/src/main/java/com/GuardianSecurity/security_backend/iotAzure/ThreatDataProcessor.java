@@ -152,7 +152,7 @@ public class ThreatDataProcessor {
                 MlDataPayload mlData = objectMapper.convertValue(rawMlData, MlDataPayload.class);
                 record.setThreatLevel(mlData.getLevel());
                 record.setObjectDetected(mlData.getObject()); 
-                record.setPhotoURL(mlData.getUrl());
+                record.setPhotoUrl(mlData.getUrl());
             } catch (IllegalArgumentException e) {
                 log.error("Failed to map inner ML data payload.", e);
                 throw new RuntimeException("Malformed ML data structure received.", e);

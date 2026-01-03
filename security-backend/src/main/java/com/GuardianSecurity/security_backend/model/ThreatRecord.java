@@ -53,7 +53,7 @@ public class ThreatRecord {
     // --- Evidence & Metadata ---
     
     @Column(name = "photo_url", length = 512)
-    private String photoURL;
+    private String photoUrl;
     
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt; 
