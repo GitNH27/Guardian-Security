@@ -6,12 +6,14 @@ import com.GuardianSecurity.security_backend.model.DeviceAccess;
 import com.GuardianSecurity.security_backend.model.DeviceAccessPermission;
 
 import com.GuardianSecurity.security_backend.service.DeviceService;
+import com.GuardianSecurity.security_backend.service.LiveStreamService;
 
 import com.GuardianSecurity.security_backend.dto.request.DeviceClaimRequest;
 import com.GuardianSecurity.security_backend.dto.response.AccessDeviceResponse;
 import com.GuardianSecurity.security_backend.dto.request.AccessDeviceRequest;
 import com.GuardianSecurity.security_backend.dto.request.OwnerDecisionRequest;
 import com.GuardianSecurity.security_backend.dto.response.DecisionOnMember;
+import com.GuardianSecurity.security_backend.dto.response.LiveFeedResponse;
 import com.GuardianSecurity.security_backend.service.helper.OwnerDeviceValidationResult;
 
 import org.springframework.http.HttpStatus;
@@ -29,10 +31,12 @@ import jakarta.validation.Valid;
 public class DeviceController {
 
     private final DeviceService deviceService;
+    private final LiveStreamService liveStreamService;
 
 
-    public DeviceController(DeviceService deviceService) {
+    public DeviceController(DeviceService deviceService, LiveStreamService liveStreamService) {
         this.deviceService = deviceService;
+        this.liveStreamService = liveStreamService;
     }
 
     // Method to claim a device (recieves pairing_password from user) needs JWT authentication
@@ -81,4 +85,13 @@ public class DeviceController {
         List<AccessDeviceResponse> pendingRequests = deviceService.getPendingAccessRequestsForDevice(serialNumber);
         return ResponseEntity.status(HttpStatus.OK).body(pendingRequests);
     }
+
+    // Determine if device specific camera live stream is online
+    @GetMapping("/live-status")
+    public ResponseEntity<LiveFeedResponse> getLiveStatus(@RequestParam String serialNumber, @RequestParam Long deviceId) {
+        // Use service to get active feeds
+        LiveFeedResponse liveFeedResponse = liveStreamService.getActiveFeeds(serialNumber, deviceId);
+        return ResponseEntity.status(HttpStatus.OK).body(liveFeedResponse);
+    }
+    
 }

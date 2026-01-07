@@ -164,7 +164,7 @@ export default function HomeScreen({ navigation }) {
           <DashboardCard
             title="Live Feed"
             icon="videocam-outline"
-            onPress={() => navigation.navigate('LiveView')}
+            onPress={() => navigation.navigate('Live')}
             // Now activates automatically when a Person/Object is detected
             disabled={!hasDevice || !isActiveThreat}
             color={isActiveThreat ? "#FF4444" : COLORS.primary}
