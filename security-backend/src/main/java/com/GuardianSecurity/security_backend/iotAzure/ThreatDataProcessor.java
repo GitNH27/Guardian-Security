@@ -78,14 +78,20 @@ public class ThreatDataProcessor {
      * Determines what notifications or real-time actions are needed.
      */
     private void handleNotifications(ThreatRecord record, String liveUrl) {
-        if ("VERY_HIGH".equals(record.getThreatLevel()) || "HIGH".equals(record.getThreatLevel())) {
-            
-            log.error("!!! REAL-TIME ALERT: Threat level {} detected. Publishing to Redis channel: {}",
-                      record.getThreatLevel(), REDIS_ALERT_CHANNEL);
-            
-            // Publish the alert to Redis
-            record.setLiveStreamUrl(liveUrl);   // Set live stream URL if available
-            redisTemplate.convertAndSend(REDIS_ALERT_CHANNEL, record); 
+        if ("HIGH".equals(record.getThreatLevel())) {
+
+            // Camera (Ex: car/ml/front)
+            String cameraString = record.getCameraTopic().replace("/", ":");
+            String statusKey = "device:status:" + record.getRawDeviceId() + ":" + cameraString;
+        
+            if (liveUrl != null) {
+                // This stores the specific live feed for the FRONT or BACK camera
+                redisTemplate.opsForValue().set(statusKey, liveUrl, java.time.Duration.ofMinutes(3));
+                log.info("Live status cached for Camera: {} (Key: {})", record.getCameraTopic(), statusKey);
+            }
+            // Broadcast to WebSocket
+            record.setLiveStreamUrl(liveUrl);   
+            redisTemplate.convertAndSend(REDIS_ALERT_CHANNEL, record);
         }
     }
 
