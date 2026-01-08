@@ -87,11 +87,11 @@ public class DeviceController {
     }
 
     // Determine if device specific camera live stream is online
-    @GetMapping("/live-status")
+    @GetMapping("/liveFeed")
     public ResponseEntity<LiveFeedResponse> getLiveStatus(@RequestParam String serialNumber, @RequestParam Long deviceId) {
         // Use service to get active feeds
         LiveFeedResponse liveFeedResponse = liveStreamService.getActiveFeeds(serialNumber, deviceId);
         return ResponseEntity.status(HttpStatus.OK).body(liveFeedResponse);
     }
-    
+
 }
