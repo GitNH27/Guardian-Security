@@ -166,7 +166,7 @@ export default function HomeScreen({ navigation }) {
             icon="videocam-outline"
             onPress={() => navigation.navigate('Live')}
             // Now activates automatically when a Person/Object is detected
-            disabled={!hasDevice || !isActiveThreat}
+            disabled={!hasDevice}
             color={isActiveThreat ? "#FF4444" : COLORS.primary}
           />
         </View>

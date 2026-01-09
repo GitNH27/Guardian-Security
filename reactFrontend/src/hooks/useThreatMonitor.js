@@ -11,6 +11,7 @@ export const useThreatMonitor = (rawDeviceIds = []) => {
   const subscriptionsRef = useRef({}); 
   const ttlTimersRef = useRef({});
 
+  // Ensure deviceIds is always an array of strings
   const deviceIds = Array.isArray(rawDeviceIds) 
     ? rawDeviceIds.map(id => String(id)) 
     : [];
@@ -21,74 +22,72 @@ export const useThreatMonitor = (rawDeviceIds = []) => {
 
     ids.forEach(id => {
       if (!subscriptionsRef.current[id]) {
-        console.log(`📡 Subscribing to: /topic/threats/${id}`);
+        console.log(`[STOMP] Subscribing to: /topic/threats/${id}`);
         
         subscriptionsRef.current[id] = client.subscribe(`/topic/threats/${id}`, (msg) => {
-        console.log(`📥 [STOMP RECEIVE] Device ${id} raw payload:`, msg.body);
+          console.log(`[STOMP RECEIVE] Device ${id} raw payload:`, msg.body);
 
-        try {
+          try {
             const payload = JSON.parse(msg.body);
 
             const normalizedPayload = {
-            ...payload,
-            level: payload.threatLevel,
-            deviceId: payload.rawDeviceId,
-            object: payload.objectDetected,
-            isThreat: payload.threatLevel === 'HIGH',
-            lastUpdated: Date.now()
+              ...payload,
+              level: payload.threatLevel,
+              deviceId: payload.rawDeviceId,
+              object: payload.objectDetected,
+              isThreat: payload.threatLevel === 'HIGH',
+              lastUpdated: Date.now()
             };
 
-            // 🔥 Update threat immediately
+            // Update threat immediately
             setThreats(prev => ({
-            ...prev,
-            [id]: normalizedPayload
+              ...prev,
+              [id]: normalizedPayload
             }));
 
-            // ⏱️ CLEAR existing TTL timer (if any)
+            // Clear existing TTL timer
             if (ttlTimersRef.current[id]) {
-            clearTimeout(ttlTimersRef.current[id]);
+              clearTimeout(ttlTimersRef.current[id]);
             }
 
-            // ⏳ START new TTL timer
+            // Start new TTL timer (3 minutes to match backend Redis TTL)
             ttlTimersRef.current[id] = setTimeout(() => {
-            console.log(`🟢 TTL expired → Downgrading device ${id} to LOW`);
+              console.log(`[TTL] Expired - Downgrading device ${id} to LOW`);
 
-            setThreats(prev => ({
+              setThreats(prev => ({
                 ...prev,
                 [id]: {
-                ...prev[id],
-                level: 'LOW',
-                isThreat: false
+                  ...prev[id],
+                  level: 'LOW',
+                  isThreat: false,
                 }
-            }));
-            }, 15000); // 15 seconds
+              }));
+            }, 180000); // 3 minutes
 
-        } catch (e) {
-            console.error("❌ Payload parse error", e);
-        }
+          } catch (e) {
+            console.error("[STOMP] Payload parse error:", e);
+          }
         });
-
       }
     });
 
+    // Unsubscribe from devices no longer in the list
     Object.keys(subscriptionsRef.current).forEach(id => {
-    if (!ids.includes(id)) {
-        console.log(`🔌 Unsubscribing from: ${id}`);
+      if (!ids.includes(id)) {
+        console.log(`[STOMP] Unsubscribing from: ${id}`);
         subscriptionsRef.current[id].unsubscribe();
 
         if (ttlTimersRef.current[id]) {
-        clearTimeout(ttlTimersRef.current[id]);
-        delete ttlTimersRef.current[id];
+          clearTimeout(ttlTimersRef.current[id]);
+          delete ttlTimersRef.current[id];
         }
 
         delete subscriptionsRef.current[id];
-    }
+      }
     });
   };
 
   useEffect(() => {
-    console.log('🔄 Hook Pulse - Device IDs:', deviceIds);
-
     if (deviceIds.length === 0) return;
 
     if (clientRef.current) {
@@ -98,37 +97,25 @@ export const useThreatMonitor = (rawDeviceIds = []) => {
       return; 
     }
 
-    console.log('🚀 Initializing WebSocket Connection...');
+    console.log('[STOMP] Initializing WebSocket Connection...');
 
     const client = new Client({
-
-      // Add 'v12.stomp' as a sub-protocol to satisfy Spring's requirements
-        webSocketFactory: () => new WebSocket(
-        'ws://192.168.2.18:8080/ws-security', 
-        ['v12.stomp', 'v11.stomp', 'v10.stomp'] // Explicitly list supported protocols
-        ),
-
-        forceBinaryWSFrames: true,
-
-        appendMissingNULLonIncoming: true,
-
-
-      
+      webSocketFactory: () => new WebSocket(
+        'ws://192.168.2.78:8080/ws-security', 
+        ['v12.stomp', 'v11.stomp', 'v10.stomp']
+      ),
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-
-      // ADDED: This will print every STOMP frame sent/received to your terminal
       debug: (str) => {
-        console.log('🐝 STOMP Debug:', str);
+        console.log('[STOMP Debug]', str);
       },
-
       onConnect: () => {
-        console.log('✅ STOMP Connected');
+        console.log('[STOMP] Connected successfully');
         syncSubscriptions(deviceIds);
       },
-      onStompError: (frame) => console.error('❌ STOMP Error:', frame.headers['message']),
-      onWebSocketError: (err) => console.error('❌ WS Error:', err),
+      onStompError: (frame) => console.error('[STOMP] Error:', frame.headers['message']),
+      onWebSocketError: (err) => console.error('[STOMP] WebSocket Error:', err),
     });
 
     client.activate();
@@ -136,19 +123,19 @@ export const useThreatMonitor = (rawDeviceIds = []) => {
 
   }, [JSON.stringify(deviceIds)]); 
 
-    useEffect(() => {
-        return () => {
-        if (clientRef.current) {
-            console.log('💤 Deactivating WebSocket Connection (Unmount)');
-            clientRef.current.deactivate();
-            clientRef.current = null;
-        }
-
-        // 🧹 CLEANUP: Clear all active TTL timers on unmount
-        Object.values(ttlTimersRef.current).forEach(timer => clearTimeout(timer));
-        ttlTimersRef.current = {};
-        };
-    }, []);
+  useEffect(() => {
+    return () => {
+      if (clientRef.current) {
+        console.log('[STOMP] Deactivating WebSocket Connection');
+        clientRef.current.deactivate();
+        clientRef.current = null;
+      }
+      
+      // Cleanup all active TTL timers on unmount
+      Object.values(ttlTimersRef.current).forEach(timer => clearTimeout(timer));
+      ttlTimersRef.current = {};
+    };
+  }, []);
 
   return threats;
 };

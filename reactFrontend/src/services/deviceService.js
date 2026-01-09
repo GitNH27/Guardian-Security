@@ -73,5 +73,18 @@ export const deviceService = {
       console.error("DeviceService Error:", error.response?.data || error.message);
       throw error;
     }
+  },
+
+  // Determine Live Feed Status for Device Cameras
+  getLiveFeeds: async (serialNumber, deviceId) => {
+    try {
+      const response = await apiClient.get(`/device/liveFeed`, {
+        params: { serialNumber, deviceId }
+      });
+      return response.data.activeFeeds || {};
+    } catch (error) {
+      console.error("Failed to fetch live feeds", error);
+      return {};
+    }
   }
 };
