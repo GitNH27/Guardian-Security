@@ -30,6 +30,7 @@ export default function LiveScreen({ navigation }) {
   console.log('[LiveScreen] Device Info:', deviceInfo);
   console.log('[LiveScreen] Last Threat:', lastThreat);
 
+// Inside LiveScreen.js
   const fetchLiveStatus = async (isRefreshing = false) => {
     try {
       if (!isRefreshing) setLoading(true);
@@ -38,9 +39,11 @@ export default function LiveScreen({ navigation }) {
       const storedId = await SecureStore.getItemAsync('activeDeviceId');
 
       if (storedSerial && storedId) {
-        setDeviceInfo({ id: storedId, serial: storedSerial });
+        const numericId = Number(storedId); // Ensure deviceId is numeric for backend
+        setDeviceInfo({ id: numericId, serial: storedSerial });
+
         // Initial "Pull" from Redis via our new API
-        const feeds = await deviceService.getLiveFeeds(storedSerial, storedId);
+        const feeds = await deviceService.getLiveFeeds(storedSerial, numericId);
         setActiveFeeds(feeds);
       }
     } catch (error) {
@@ -50,7 +53,6 @@ export default function LiveScreen({ navigation }) {
       setRefreshing(false);
     }
   };
-
   // Initial load
   useEffect(() => {
     fetchLiveStatus();
@@ -60,11 +62,14 @@ export default function LiveScreen({ navigation }) {
   useEffect(() => {
     if (lastThreat?.ml_data?.liveStreamUrl) {
       const topic = lastThreat.cameraTopic || 'General';
-      const url = lastThreat.ml_data.liveStreamUrl;
+
+      // Clean the URL (remove quotes if present)
+      const rawUrl = lastThreat.ml_data.liveStreamUrl;
+      const cleanUrl = rawUrl.replace(/"/g, '');
 
       setActiveFeeds(prev => ({
         ...prev,
-        [topic]: url
+        [topic]: cleanUrl
       }));
     }
   }, [lastThreat]);

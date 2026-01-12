@@ -81,6 +81,9 @@ export const deviceService = {
       const response = await apiClient.get(`/device/liveFeed`, {
         params: { serialNumber, deviceId }
       });
+      
+      console.log('[API Debug] Raw Feeds from Backend:', JSON.stringify(response.data.activeFeeds, null, 2));
+
       return response.data.activeFeeds || {};
     } catch (error) {
       console.error("Failed to fetch live feeds", error);
