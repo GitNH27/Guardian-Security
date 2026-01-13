@@ -12,7 +12,6 @@ import { sharedStyles } from '../styles/sharedStyles';
 // Services
 import { threatLogService } from '../services/threatLogService';
 
-// 🔥 NEW: Import the modular component
 import { LogEntryCard } from '../components/LogEntryCard';
 
 export default function ThreatLogScreen({ navigation }) {
@@ -52,7 +51,6 @@ export default function ThreatLogScreen({ navigation }) {
     fetchLogs(true);
   };
 
-  // 🔥 CHANGED: Now using the modular component instead of inline View
   const renderLogItem = ({ item }) => (
     <LogEntryCard item={item} />
   );

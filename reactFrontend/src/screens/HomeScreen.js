@@ -45,7 +45,7 @@ export default function HomeScreen({ navigation }) {
             setUserName(user.firstName || 'User');
           }
 
-          // 🔥 ALWAYS refresh devices from backend
+          // ALWAYS refresh devices from backend
           const response = await deviceService.getDeviceSelectionContext();
           
           if (response.devices && response.devices.length > 0) {
@@ -175,7 +175,7 @@ export default function HomeScreen({ navigation }) {
         {Object.keys(fleetThreats).length > 0 && Object.entries(fleetThreats).some(([id, data]) => id !== activeDevice?.deviceId?.toString() && data.ml_data?.level === 'HIGH') && (
            <View style={[sharedStyles.card, { marginTop: 20, borderColor: '#FF4444', backgroundColor: 'rgba(255, 68, 68, 0.1)' }]}>
              <Text style={{ color: '#FF4444', fontWeight: 'bold', textAlign: 'center' }}>
-               🚨 ALERT: High Threat on another vehicle!
+               ALERT: High Threat on another vehicle!
              </Text>
            </View>
         )}

@@ -33,7 +33,7 @@ public class RedisThreatSubscriber implements MessageListener {
                     "/topic/threats/" + threat.getRawDeviceId(), threat);
 
                 // Log the alert for monitoring
-                log.warn("🚨 [AUTOMATED ALERT] Real-time threat processed!");
+                log.warn("Real-time threat processed!");
                 log.warn("   Device ID: {} | Level: {} | Object: {}", 
                          threat.getRawDeviceId(), 
                          threat.getThreatLevel(), 
