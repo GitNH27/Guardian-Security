@@ -6,6 +6,7 @@ import com.GuardianSecurity.security_backend.model.DeviceAccess;
 import com.GuardianSecurity.security_backend.model.DeviceAccessPermission;
 
 import com.GuardianSecurity.security_backend.service.DeviceService;
+import com.GuardianSecurity.security_backend.service.DeviceStatusService;
 import com.GuardianSecurity.security_backend.service.LiveStreamService;
 
 import com.GuardianSecurity.security_backend.dto.request.DeviceClaimRequest;
@@ -13,6 +14,7 @@ import com.GuardianSecurity.security_backend.dto.response.AccessDeviceResponse;
 import com.GuardianSecurity.security_backend.dto.request.AccessDeviceRequest;
 import com.GuardianSecurity.security_backend.dto.request.OwnerDecisionRequest;
 import com.GuardianSecurity.security_backend.dto.response.DecisionOnMember;
+import com.GuardianSecurity.security_backend.dto.response.DeviceStatusResponse;
 import com.GuardianSecurity.security_backend.dto.response.LiveFeedResponse;
 import com.GuardianSecurity.security_backend.service.helper.OwnerDeviceValidationResult;
 
@@ -32,11 +34,13 @@ public class DeviceController {
 
     private final DeviceService deviceService;
     private final LiveStreamService liveStreamService;
+    private final DeviceStatusService deviceStatusService;
 
 
-    public DeviceController(DeviceService deviceService, LiveStreamService liveStreamService) {
+    public DeviceController(DeviceService deviceService, LiveStreamService liveStreamService, DeviceStatusService deviceStatusService) {
         this.deviceService = deviceService;
         this.liveStreamService = liveStreamService;
+        this.deviceStatusService = deviceStatusService;
     }
 
     // Method to claim a device (recieves pairing_password from user) needs JWT authentication
@@ -92,6 +96,12 @@ public class DeviceController {
         // Use service to get active feeds
         LiveFeedResponse liveFeedResponse = liveStreamService.getActiveFeeds(serialNumber, deviceId);
         return ResponseEntity.status(HttpStatus.OK).body(liveFeedResponse);
+    }
+
+    @GetMapping("/{deviceId}/systemStatus")
+    public ResponseEntity<DeviceStatusResponse> getSystemStatus(@PathVariable Long deviceId) {
+        DeviceStatusResponse status = deviceStatusService.getDeviceSystemStatus(deviceId);
+        return ResponseEntity.status(HttpStatus.OK).body(status);
     }
 
 }

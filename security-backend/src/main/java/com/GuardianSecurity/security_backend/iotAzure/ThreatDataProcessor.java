@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.time.LocalDateTime; // Use LocalDateTime consistently
 import java.util.Map;
+import java.time.Duration;
 
 // Notes on Code and assumptions:
 // - The IoT device sends a JSON payload with a timestamp in ISO-8601 format.
@@ -44,6 +45,22 @@ public class ThreatDataProcessor {
         this.redisTemplate = redisTemplate; // <-- INJECTED
     }
 
+    // Heartbeat monitoring function
+    private void handleHeartbeat(Map<String, Object> dataMap) {
+        Object deviceId = dataMap.get("deviceId");
+        if (deviceId == null) {
+            log.warn("Received heartbeat without a deviceId. Ignoring.");
+            return;
+        }
+
+        String heartbeatKey = "device:heartbeat:" + deviceId.toString();
+        
+        // Update the heartbeat in Redis every 45 seconds
+        redisTemplate.opsForValue().set(heartbeatKey, "ONLINE", java.time.Duration.ofSeconds(45));
+        
+        log.info("Heartbeat processed for Device: {}. Status: ONLINE", deviceId);
+    }
+
     /**
      * Entry point for processing messages received from the Azure IoT Hub stream.
      */
@@ -53,25 +70,38 @@ public class ThreatDataProcessor {
         String liveUrl = null;
         try {
             Map<String, Object> dataMap = objectMapper.readValue(rawJsonPayload, Map.class);
+
+            if("HEARTBEAT".equals(dataMap.get("type"))){
+                handleHeartbeat(dataMap);
+                return;
+            }
+
             record = mapToThreatRecord(dataMap);
 
             if (dataMap.containsKey("ml_data")) {
-            Map<String, Object> ml = (Map<String, Object>) dataMap.get("ml_data");
-            liveUrl = (String) ml.get("liveStreamUrl");
-        }
+                Map<String, Object> ml = (Map<String, Object>) dataMap.get("ml_data");
+                liveUrl = (String) ml.get("liveStreamUrl");
+            }
+
+            // Save the record to the database
+            recordRepository.save(record);
+            log.info("Saved Threat Record ID {} for Device: {} | Level: {}", 
+                    record.getId(), record.getRawDeviceId(), record.getThreatLevel());
+
+            if ("INTRUDER".equals(dataMap.get("type"))) {
+                String dangerKey = "device:status:danger:" + record.getRawDeviceId();
+                // Flag the device as DANGER for 5 minutes in Redis
+                redisTemplate.opsForValue().set(dangerKey, "DANGER", Duration.ofMinutes(5));
+                log.error("INTRUDER ALERT TRIGGERED for Device: {}", record.getRawDeviceId());
+            }
+            
+            // 4. Notification Logic
+            handleNotifications(record, liveUrl);
 
         } catch (IOException e) {
             log.error("Failed to parse incoming JSON payload: {}", rawJsonPayload, e);
             throw new RuntimeException("Invalid JSON format from IoT stream.", e);
         }
-
-        // Save the record to the database
-        recordRepository.save(record);
-        log.info("Saved Threat Record ID {} for Device: {} | Level: {}", 
-                 record.getId(), record.getRawDeviceId(), record.getThreatLevel());
-        
-        // 4. Notification Logic
-        handleNotifications(record, liveUrl);
     }
 
     /**
