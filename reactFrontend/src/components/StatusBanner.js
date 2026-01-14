@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native'; // Fix: View added to prevent ReferenceError
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../styles/theme';
 import { sharedStyles } from '../styles/sharedStyles';
@@ -7,12 +7,22 @@ import { sharedStyles } from '../styles/sharedStyles';
 export const StatusBanner = ({ 
   status, 
   message, 
-  type = 'info' // 'info', 'success', 'warning', 'error', 'offline'
+  type = 'OFFLINE' 
 }) => {
+  
+  // Map backend DTO statuses to your UI types
+  const getUiType = () => {
+    const normalized = type?.toUpperCase();
+    if (normalized === 'DANGER') return 'error';
+    if (normalized === 'ACTIVE') return 'success';
+    return 'offline';
+  };
+
+  const uiType = getUiType();
+
   const getColors = () => {
-    switch (type) {
+    switch (uiType) {
       case 'success': return { border: '#4CAF50', text: '#4CAF50' };
-      case 'warning': return { border: '#FF9800', text: '#FF9800' };
       case 'error':   return { border: '#FF4444', text: '#FF4444' };
       case 'offline': return { border: '#444444', text: '#666666' };
       default:        return { border: COLORS.primary, text: COLORS.primary };
@@ -20,9 +30,8 @@ export const StatusBanner = ({
   };
 
   const getIcon = () => {
-    switch (type) {
+    switch (uiType) {
       case 'success': return 'checkmark-circle';
-      case 'warning': return 'warning';
       case 'error':   return 'alert-circle';
       case 'offline': return 'cloud-offline';
       default:        return 'information-circle';
@@ -32,7 +41,15 @@ export const StatusBanner = ({
   const colors = getColors();
 
   return (
-    <View style={[sharedStyles.statusBanner, { borderLeftColor: colors.border, flexDirection: 'row', alignItems: 'center' }]}>
+    <View style={[
+      sharedStyles.statusBanner, 
+      { 
+        borderLeftColor: colors.border, 
+        flexDirection: 'row', 
+        alignItems: 'center',
+        backgroundColor: COLORS.surface, // Matches your app's theme
+      }
+    ]}>
       <Ionicons 
         name={getIcon()} 
         size={20} 
@@ -40,7 +57,7 @@ export const StatusBanner = ({
         style={{ marginRight: 12 }} 
       />
       <View style={{ flex: 1 }}>
-        <Text style={[sharedStyles.headerTitle, { fontSize: 15, letterSpacing: 0 }]}>
+        <Text style={[sharedStyles.headerTitle, { fontSize: 15, letterSpacing: 0, color: COLORS.text }]}>
             {String(status || '')}
             {message ? (
                 <Text style={{ color: colors.text, fontWeight: '600' }}>

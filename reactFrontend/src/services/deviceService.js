@@ -89,5 +89,18 @@ export const deviceService = {
       console.error("Failed to fetch live feeds", error);
       return {};
     }
+  },
+
+  // Device Health Check - Check if device is online/offline or danger/intruder
+  getSystemStatus: async (deviceId) => {
+    try {
+      const response = await apiClient.get(`/device/${deviceId}/systemStatus`);
+      return response.data;
+    } catch (error) {
+      console.error(`DeviceService [getSystemStatus] Error for ID ${deviceId}:`, error);
+      // Return a fallback status so the UI doesn't crash
+      return { status: "OFFLINE", message: "Connection Error" };
+    }
   }
+
 };

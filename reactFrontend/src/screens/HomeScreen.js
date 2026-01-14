@@ -32,8 +32,27 @@ export default function HomeScreen({ navigation }) {
   const currentThreatLevel = activeThreatData?.level || 'Low';
   const isActiveThreat = activeThreatData?.isThreat || false;
 
+  // State for real-time connection/intruder status
+  const [systemStatus, setSystemStatus] = useState({
+    status: 'OFFLINE',
+    message: 'Connecting...',
+    lastSeen: null
+  });
+
+  // Function to fetch the priority status from Redis
+  const refreshSystemStatus = async (deviceId) => {
+    if (!deviceId) return;
+    try {
+      const data = await deviceService.getSystemStatus(deviceId);
+      setSystemStatus(data);
+    } catch (error) {
+      setSystemStatus({ status: 'OFFLINE', message: 'Sync Error' });
+    }
+  };
+
   useFocusEffect(
     React.useCallback(() => {
+      let statusInterval = null; // Variable to hold the interval
       const loadSessionData = async () => {
         try {
           setLoading(true);
@@ -71,13 +90,22 @@ export default function HomeScreen({ navigation }) {
             await SecureStore.setItemAsync(
               'activeDeviceSerial',
               selectedDevice.serialNumber);
+
+              const currentDevice = selectedDevice; 
+
+            // Initial status fetch and start polling
+            refreshSystemStatus(currentDevice.deviceId);
+            
+            statusInterval = setInterval(() => {
+              refreshSystemStatus(currentDevice.deviceId);
+            }, 20000); // Poll every 20 seconds
+            
           } else {
             setActiveDevice(null);
             setRole('USER');
             setHasDevice(false);
             await SecureStore.deleteItemAsync('activeDeviceId');
           }
-
 
         } catch (e) {
           console.error('Failed to refresh home context', e);
@@ -87,6 +115,9 @@ export default function HomeScreen({ navigation }) {
       };
 
       loadSessionData();
+      return () => {  // Cleanup function - stop polling
+        if (statusInterval) clearInterval(statusInterval);
+      };
     }, [])
   );
 
@@ -135,8 +166,8 @@ export default function HomeScreen({ navigation }) {
         {/* Status Banner */}
         <StatusBanner 
           status="System Status:" 
-          message={hasDevice ? (isActiveThreat ? `THREAT: ${activeThreatData.object}` : "Guardian Active") : "Offline"}
-          type={!hasDevice ? 'offline' : (isActiveThreat ? 'error' : 'success')}
+          message={systemStatus.message} 
+          type={systemStatus.status} // 'DANGER', 'ACTIVE', or 'OFFLINE'
         />
 
         {/* Main Grid using Modular Cards */}
