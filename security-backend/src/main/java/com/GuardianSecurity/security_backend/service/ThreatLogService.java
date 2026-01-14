@@ -8,11 +8,16 @@ import com.azure.storage.blob.BlobClientBuilder;
 import com.azure.storage.blob.sas.BlobSasPermission;
 import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+//Import predicate
+import jakarta.persistence.criteria.Predicate;
 
 @Service
 public class ThreatLogService {
@@ -28,22 +33,66 @@ public class ThreatLogService {
         this.deviceService = deviceService;
     }
 
-    public List<ThreatLogResponse> getThreatLogsForDevice(String serialNumber) {
-        deviceService.validateUserAccessToDevice(serialNumber);
+    // Get threat logs for a specific device (Now includes filters by - Camera Topic, Threat Level, Classification, Date)
+    
+public List<ThreatLogResponse> getThreatLogsFilter(
+    String serialNumber, 
+    String cameraTopic, 
+    String threatLevel, 
+    String objectDetected, 
+    LocalDateTime startDate, 
+    LocalDateTime endDate
+) {
+    deviceService.validateUserAccessToDevice(serialNumber);
 
-        List<ThreatRecord> records = threatRecordRepository.findByDevice_SerialNumber(serialNumber);
-        
-        return records.stream()
-                .map(record -> new ThreatLogResponse(
-                        record.getId(),
-                        record.getThreatLevel(),
-                        record.getObjectDetected(),
-                        record.getCameraTopic(),
-                        generateSasUrl(record.getPhotoUrl()), // 🔥 Generate temporary access
-                        record.getCreatedAt()
+    Specification<ThreatRecord> spec = (root, query, cb) -> {
+        List<Predicate> predicates = new ArrayList<>();
+
+        // 1. Mandatory Serial Number Filter
+        predicates.add(cb.equal(root.get("device").get("serialNumber"), serialNumber));
+
+        // 2. Camera Topic: Matches 'threat_topic' from your Python script (e.g., 'car/ml/front')
+        if (cameraTopic != null && !cameraTopic.isEmpty()) {
+            // Using 'like' allows the user to search 'front' to match 'car/ml/front'
+            predicates.add(cb.like(cb.lower(root.get("cameraTopic")), "%" + cameraTopic.toLowerCase() + "%"));
+        }
+
+        // 3. Threat Level: Matches 'ml_data.level' (HIGH, MEDIUM, LOW)
+        if (threatLevel != null && !threatLevel.isEmpty()) {
+            // Your script sends "MEDIUM", ensure your DB/Backend logic maps MED to MEDIUM if needed
+            String levelQuery = threatLevel.equals("MED") ? "MEDIUM" : threatLevel.toUpperCase();
+            predicates.add(cb.equal(root.get("threatLevel"), levelQuery));
+        }
+
+        // 4. Classification: Matches 'ml_data.object' (e.g., 'Person')
+        if (objectDetected != null && !objectDetected.isEmpty()) {
+            predicates.add(cb.equal(root.get("objectDetected"), objectDetected));
+        }
+
+        // 5. Date Filtering: Exact minute-by-minute matching
+        if (startDate != null && endDate != null) {
+            predicates.add(cb.between(root.get("createdAt"), startDate, endDate));
+        } else if (startDate != null) {
+            predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), startDate));
+        } else if (endDate != null) {
+            predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), endDate));
+        }
+
+        query.orderBy(cb.desc(root.get("createdAt")));
+        return cb.and(predicates.toArray(new Predicate[0]));
+    };
+
+    return threatRecordRepository.findAll(spec).stream()
+            .map(record -> new ThreatLogResponse(
+                record.getId(),
+                record.getThreatLevel(),
+                record.getObjectDetected(),
+                record.getCameraTopic(),
+                generateSasUrl(record.getPhotoUrl()),
+                record.getCreatedAt()
                 ))
-                .collect(Collectors.toList());
-    }
+            .collect(Collectors.toList());
+}
 
     private String generateSasUrl(String blobUrl) {
         if (blobUrl == null || blobUrl.isEmpty()) return null;
@@ -64,4 +113,5 @@ public class ThreatLogService {
             return blobUrl; // Fallback to raw URL if signing fails
         }
     }
+    
 }

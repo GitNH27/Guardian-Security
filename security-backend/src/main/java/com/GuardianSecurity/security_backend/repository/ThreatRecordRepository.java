@@ -6,9 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 @Repository
-public interface ThreatRecordRepository extends JpaRepository<ThreatRecord, Long> {
+public interface ThreatRecordRepository extends JpaRepository<ThreatRecord, Long>, JpaSpecificationExecutor<ThreatRecord> {
     // Find the most recent threat record for a device by its serial number
     List<ThreatRecord> findTopByDevice_SerialNumberOrderByCreatedAtDesc(String serialNumber);
 

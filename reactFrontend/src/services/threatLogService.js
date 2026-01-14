@@ -6,15 +6,19 @@ import apiClient from '../api/client';
  */
 export const threatLogService = {
 
-  /**
-   * Hits @GetMapping("/threats")
-   * Returns list of ThreatLogResponse DTOs for a specific device.
-   * Validates user access on the backend before returning data.
-   */
-  getThreatLogs: async (serialNumber) => {
+/**
+ * Hits @GetMapping("/api/logs/threats")
+ * Fetches threat logs with optional filtering.
+ * @param {string} serialNumber - Mandatory
+ * @param {object} filters - Optional: { cameraTopic, threatLevel, objectDetected, start, end }
+ */
+getThreatLogs: async (serialNumber, filters = {}) => {
     try {
       const response = await apiClient.get('/logs/threats', {
-        params: { serialNumber } // Sends as ?serialNumber=DEV-GAMMA-789-RPI
+        params: { 
+          serialNumber, 
+          ...filters // Dynamically adds cameraTopic, threatLevel, etc. if present
+        }
       });
       return response.data;
     } catch (error) {
@@ -22,5 +26,4 @@ export const threatLogService = {
       throw error;
     }
   }
-
 };
