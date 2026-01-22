@@ -9,6 +9,7 @@ import DeviceSelectionScreen from '../screens/DeviceSelectionScreen';
 import DeviceManagementScreen from '../screens/DeviceManagementScreen';
 import ThreatLogScreen from '../screens/ThreatLogScreen';
 import LiveScreen from '../screens/LiveScreen';
+import FullScreenStream from '../screens/FullStreamScreen';
 
 const Stack = createStackNavigator();
 
@@ -29,6 +30,7 @@ export default function AuthNavigator() {
       <Stack.Screen name="DeviceSelectionScreen" component={DeviceSelectionScreen} />
       <Stack.Screen name="ThreatLogs" component={ThreatLogScreen} />
       <Stack.Screen name="Live" component={LiveScreen} />
+      <Stack.Screen name="FullStreamScreen" component={FullScreenStream} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }

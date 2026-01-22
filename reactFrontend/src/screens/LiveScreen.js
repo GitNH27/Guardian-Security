@@ -44,7 +44,13 @@ export default function LiveScreen({ navigation }) {
 
         // Initial "Pull" from Redis via our new API
         const feeds = await deviceService.getLiveFeeds(storedSerial, numericId);
-        setActiveFeeds(feeds);
+
+        const sanitizedFeeds = {};
+        Object.entries(feeds).forEach(([camera, url]) => {
+          sanitizedFeeds[camera] = url.replace(/["\\]/g, '').trim();
+        });
+        setActiveFeeds(sanitizedFeeds);
+
       }
     } catch (error) {
       console.error('Failed to load initial live status:', error);
@@ -65,7 +71,8 @@ export default function LiveScreen({ navigation }) {
 
       // Clean the URL (remove quotes if present)
       const rawUrl = lastThreat.ml_data.liveStreamUrl;
-      const cleanUrl = rawUrl.replace(/"/g, '');
+      let cleanUrl = rawUrl.replace(/["\\]/g, '').trim();
+
 
       setActiveFeeds(prev => ({
         ...prev,
@@ -134,8 +141,13 @@ export default function LiveScreen({ navigation }) {
 
                       <TouchableOpacity 
                         style={[sharedStyles.primaryButton, { marginTop: 12, paddingVertical: 8 }]}
-                        onPress={() => navigation.navigate('FullScreenStream', { url: streamUrl, title: cameraName })}
-                      >
+                        onPress={() => {
+                          // Ensure we strip any unexpected quotes at the moment of navigation
+                          navigation.navigate('FullStreamScreen', { 
+                            url: streamUrl, 
+                            title: cameraName 
+                          });
+                        }} >
                         <Text style={sharedStyles.primaryButtonText}>EXPAND</Text>
                       </TouchableOpacity>
                     </View>
