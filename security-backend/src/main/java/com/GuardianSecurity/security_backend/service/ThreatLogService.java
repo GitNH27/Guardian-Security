@@ -113,5 +113,28 @@ public List<ThreatLogResponse> getThreatLogsFilter(
             return blobUrl; // Fallback to raw URL if signing fails
         }
     }
-    
+
+    public String generateSasUrl(String blobUrl, boolean forceDownload) {
+        if (blobUrl == null || blobUrl.isEmpty()) return null;
+        
+        try {
+            BlobClient blobClient = new BlobClientBuilder()
+                    .connectionString(storageConnectionString)
+                    .endpoint(blobUrl)
+                    .buildClient();
+
+            BlobSasPermission permission = new BlobSasPermission().setReadPermission(true);
+            OffsetDateTime expiryTime = OffsetDateTime.now().plusMinutes(15);
+            BlobServiceSasSignatureValues values = new BlobServiceSasSignatureValues(expiryTime, permission);
+
+            // This is the magic part that won't affect your frontend unless you ask for it
+            if (forceDownload) {
+                values.setContentDisposition("attachment; filename=\"security_log.jpg\"");
+            }
+
+            return blobUrl + "?" + blobClient.generateSas(values);
+        } catch (Exception e) {
+            return blobUrl;
+        }
+    }
 }

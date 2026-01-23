@@ -2,6 +2,11 @@ package com.GuardianSecurity.security_backend.controller;
 
 import com.GuardianSecurity.security_backend.dto.response.ThreatLogResponse;
 import com.GuardianSecurity.security_backend.service.ThreatLogService;
+import com.GuardianSecurity.security_backend.service.VerifyEmail;
+
+import jakarta.validation.Valid;
+
+import com.GuardianSecurity.security_backend.dto.request.EmailLogRequest;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -16,9 +21,11 @@ import java.util.List;
 public class ThreatLogController {
 
     private final ThreatLogService threatLogService;
+    private final VerifyEmail verifyEmail;
 
-    public ThreatLogController(ThreatLogService threatLogService) {
+    public ThreatLogController(ThreatLogService threatLogService, VerifyEmail verifyEmail) {
         this.threatLogService = threatLogService;
+        this.verifyEmail = verifyEmail;
     }
 
     // Endpoint to get all threat logs for a specific device
@@ -50,5 +57,17 @@ public class ThreatLogController {
         );
 
         return ResponseEntity.status(HttpStatus.OK).body(logs);
+    }
+
+    // Send email with threat log and photo attachment
+    @PostMapping("/email-threat-log")
+    public ResponseEntity<?> emailThreatLog(@Valid @RequestBody EmailLogRequest request){
+        try {
+            verifyEmail.emailThreatLog(request);
+            return ResponseEntity.status(HttpStatus.OK).body("Threat log email sent successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error sending threat log email: " + e.getMessage());
+        }
     }
 }
