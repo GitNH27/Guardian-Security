@@ -1,11 +1,13 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image, Linking, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Image, Linking, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../styles/theme';
 import { sharedStyles } from '../styles/sharedStyles';
 
-export const LogEntryCard = ({ item }) => {
-  // Logic to color-code based on threat_level from database
+// Added userEmail as a prop to handle the dispatch destination
+export const LogEntryCard = ({ item, userEmail }) => {
+  const [isSending, setIsSending] = useState(false);
+
   const getThreatColor = (level) => {
     switch (level?.toUpperCase()) {
       case 'HIGH': return '#FF4444';
@@ -17,11 +19,42 @@ export const LogEntryCard = ({ item }) => {
 
   const handleViewImage = () => {
     if (item.photoUrl) {
-      Linking.openURL(item.photoUrl).catch(() =>   
+      Linking.openURL(item.photoUrl).catch(() => 
         Alert.alert("Error", "Could not open image link.")
       );
     } else {
       Alert.alert("No Image", "No photo was captured for this event.");
+    }
+  };
+
+  // --- NEW EMAIL FUNCTION ---
+  const handleEmailThreatLog = async () => {
+    if (!item.photoUrl) {
+      Alert.alert("Unavailable", "Only records with captured images can be emailed.");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      // Calls your @PostMapping("/email-threat-log")
+      const response = await fetch('http://YOUR_BACKEND_IP:8080/api/logs/email-threat-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          logId: item.id,
+          email: userEmail 
+        }),
+      });
+
+      if (response.ok) {
+        Alert.alert("Success", "Security report has been sent to your email.");
+      } else {
+        throw new Error("Server error while sending email.");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to dispatch email. Check your connection.");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -47,7 +80,6 @@ export const LogEntryCard = ({ item }) => {
           </Text>
         </View>
 
-        {/* Image Preview - Uses photo_url from threat_records */}
         {item.photoUrl ? (
           <TouchableOpacity onPress={handleViewImage}>
             <Image 
@@ -69,7 +101,22 @@ export const LogEntryCard = ({ item }) => {
             {item.cameraTopic}
           </Text>
         </View>
-        <Text style={sharedStyles.headerSubtitle}>{formattedDate}</Text>
+
+        {/* --- ACTIONS SECTION --- */}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={[sharedStyles.headerSubtitle, { marginRight: 15 }]}>{formattedDate}</Text>
+          
+          {/* Only show email button if there is a photoUrl */}
+          {item.photoUrl && (
+            isSending ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <TouchableOpacity onPress={handleEmailThreatLog}>
+                <Ionicons name="mail-outline" size={20} color={COLORS.primary} />
+              </TouchableOpacity>
+            )
+          )}
+        </View>
       </View>
     </View>
   );

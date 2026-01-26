@@ -12,7 +12,7 @@ export const threatLogService = {
  * @param {string} serialNumber - Mandatory
  * @param {object} filters - Optional: { cameraTopic, threatLevel, objectDetected, start, end }
  */
-getThreatLogs: async (serialNumber, filters = {}) => {
+  getThreatLogs: async (serialNumber, filters = {}) => {
     try {
       const response = await apiClient.get('/logs/threats', {
         params: { 
@@ -23,6 +23,16 @@ getThreatLogs: async (serialNumber, filters = {}) => {
       return response.data;
     } catch (error) {
       console.error("ThreatLogService [getThreatLogs] Error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  postEmailThreatLog: async (emailLogRequest) => {
+    try {
+      const response = await apiClient.post('/logs/email-threat-log', emailLogRequest);
+      return response.data;
+    } catch (error) {
+      console.error("ThreatLogService [postEmailThreatLog] Error:", error.response?.data || error.message);
       throw error;
     }
   }

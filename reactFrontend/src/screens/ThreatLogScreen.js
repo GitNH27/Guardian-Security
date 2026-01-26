@@ -16,6 +16,7 @@ export default function ThreatLogScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [serialNumber, setSerialNumber] = useState(null);
+  const [userEmail, setUserEmail] = useState(null);
   
   // State to hold the current active filters
   const [activeFilters, setActiveFilters] = useState({});
@@ -24,7 +25,11 @@ export default function ThreatLogScreen({ navigation }) {
     try {
       if (!isRefreshing) setLoading(true);
       
-      const storedSerial = await SecureStore.getItemAsync('activeDeviceSerial');
+      const [storedSerial, storedEmail] = await Promise.all([
+        SecureStore.getItemAsync('activeDeviceSerial'),
+        SecureStore.getItemAsync('userEmail') // Ensure you save this key during Login!
+      ]);
+      setUserEmail(storedEmail);
       setSerialNumber(storedSerial || "Unknown Device");
 
       if (storedSerial) {
@@ -85,7 +90,7 @@ export default function ThreatLogScreen({ navigation }) {
           <FlatList
             data={logs}
             keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => <LogEntryCard item={item} />}
+            renderItem={({ item }) => <LogEntryCard item={item} userEmail={userEmail} />}
             contentContainerStyle={{ paddingBottom: 20 }}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
