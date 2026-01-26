@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AuthNavigator from './src/navigation/AuthNavigator'; // Check this path!
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 
 import messaging from '@react-native-firebase/messaging';
 import { Alert } from 'react-native';

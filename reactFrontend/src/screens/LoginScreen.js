@@ -8,6 +8,7 @@ import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import { authService } from '../services/authService';
 import { deviceService } from '../services/deviceService';
+import { registerForPushNotifications, syncFcmTokenWithBackend } from '../services/notificationService';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -32,6 +33,19 @@ const handleLogin = async () => {
       // 1. Defensive Check: Ensure token exists and is a string
       if (authResponse && authResponse.token) {
         await SecureStore.setItemAsync('userToken', String(authResponse.token));
+        try {
+          // 1. Get the FCM token from Firebase
+          const fcmToken = await registerForPushNotifications();
+          
+          if (fcmToken) {
+            // 2. Send it to your Spring Boot backend with the JWT we just got
+            await syncFcmTokenWithBackend(fcmToken, authResponse.token);
+          }
+        } catch (fcmError) {
+          // We log the error but don't stop the login process 
+          // because the user should still be able to use the app
+          console.error("FCM Registration during login failed:", fcmError);
+        }
       } else {
         throw new Error("Server did not return an authentication token.");
       }

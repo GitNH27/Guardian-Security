@@ -1,5 +1,7 @@
 package com.GuardianSecurity.security_backend.service;
-
+import com.GuardianSecurity.security_backend.model.User;
+import com.GuardianSecurity.security_backend.model.DeviceAccess;
+import com.GuardianSecurity.security_backend.repository.DeviceAccessRepository;
 import com.GuardianSecurity.security_backend.model.ThreatRecord;
 import com.GuardianSecurity.security_backend.dto.response.ThreatLogResponse;
 import com.GuardianSecurity.security_backend.repository.ThreatRecordRepository;
@@ -24,13 +26,15 @@ public class ThreatLogService {
 
     private final ThreatRecordRepository threatRecordRepository;
     private final DeviceService deviceService;
+    private final DeviceAccessRepository deviceAccessRepository;
 
     @Value("${azure.storage.checkpoint-connection-string}")
     private String storageConnectionString;
 
-    public ThreatLogService(ThreatRecordRepository threatRecordRepository, DeviceService deviceService) {
+    public ThreatLogService(ThreatRecordRepository threatRecordRepository, DeviceService deviceService, DeviceAccessRepository deviceAccessRepository) {
         this.threatRecordRepository = threatRecordRepository;
         this.deviceService = deviceService;
+        this.deviceAccessRepository = deviceAccessRepository;
     }
 
     // Get threat logs for a specific device (Now includes filters by - Camera Topic, Threat Level, Classification, Date)
@@ -136,5 +140,12 @@ public List<ThreatLogResponse> getThreatLogsFilter(
         } catch (Exception e) {
             return blobUrl;
         }
+    }
+
+    public List<User> getAllUsersWithAccess(Long deviceId) {
+        return deviceAccessRepository.findAllByDeviceId(deviceId)
+                .stream()
+                .map(DeviceAccess::getUser)
+                .collect(Collectors.toList());
     }
 }

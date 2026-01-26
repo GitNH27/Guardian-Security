@@ -1,3 +1,4 @@
+import apiClient from '../api/client';
 import messaging from '@react-native-firebase/messaging';
 import * as SecureStore from 'expo-secure-store';
 
@@ -27,4 +28,33 @@ export const setupFCMTokenRefreshListener = () => {
         console.log("FCM Token Refreshed:", token);
         authService.updateFcmToken(token); 
     });
+};
+
+// Add this to your existing notification file
+export const syncFcmTokenWithBackend = async (fcmToken, userJwt) => {
+  try {
+    // 1. Data Body (Second Argument)
+    const data = {
+      token: fcmToken,
+      deviceName: "Android Emulator"
+    };
+
+    // 2. Config/Headers (Third Argument)
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${userJwt}`
+      }
+    };
+
+    const response = await apiClient.post('/auth/register-fcm', data, config);
+
+    // Axios considers 2xx status as success automatically
+    console.log("Database synced with FCM Token");
+    return response.data;
+
+  } catch (error) {
+    // Better error logging to see what the server says
+    const serverMessage = error.response?.data?.message || error.message;
+    console.error("Sync failed:", serverMessage);
+  }
 };

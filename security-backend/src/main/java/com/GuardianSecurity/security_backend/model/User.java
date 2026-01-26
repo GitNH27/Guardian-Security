@@ -9,6 +9,7 @@ import java.util.Collections;
 import lombok.Data;          // Generates Getters, Setters, toString, equals, hashCode
 import lombok.NoArgsConstructor; // Generates no-arg constructor (required by JPA)
 import java.util.List;
+import java.util.ArrayList;
 
 @Data
 @NoArgsConstructor // Adds the JPA required empty constructor
@@ -26,6 +27,9 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<DeviceAccess> deviceAccesses;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserFcmToken> fcmTokens = new ArrayList<>();
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

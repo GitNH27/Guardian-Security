@@ -8,13 +8,18 @@ import com.GuardianSecurity.security_backend.repository.ThreatRecordRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.RedisTemplate; // <-- NEW IMPORT
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.GuardianSecurity.security_backend.service.FcmNotificationService;
+import com.GuardianSecurity.security_backend.service.ThreatLogService;
+import com.GuardianSecurity.security_backend.model.User;
 
 import java.io.IOException;
 import java.time.LocalDateTime; // Use LocalDateTime consistently
 import java.util.Map;
+import java.util.List;
 import java.time.Duration;
 
 // Notes on Code and assumptions:
@@ -30,7 +35,9 @@ public class ThreatDataProcessor {
     private final ObjectMapper objectMapper;
     private final ThreatRecordRepository recordRepository;
     private final DeviceRepository deviceRepository;
-    private final RedisTemplate<String, Object> redisTemplate; // <-- NEW INJECTION
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ThreatLogService threatLogService;
+    private final FcmNotificationService fcmNotificationService;
 
     // Define the Redis channel name for alerts
     private static final String REDIS_ALERT_CHANNEL = "threat-alerts"; 
@@ -38,11 +45,15 @@ public class ThreatDataProcessor {
     public ThreatDataProcessor(ObjectMapper objectMapper, 
                                ThreatRecordRepository recordRepository, 
                                DeviceRepository deviceRepository,
-                               RedisTemplate<String, Object> redisTemplate) { // <-- NEW PARAMETER
+                               RedisTemplate<String, Object> redisTemplate,
+                               ThreatLogService threatLogService,
+                               FcmNotificationService fcmNotificationService) {
         this.objectMapper = objectMapper;
         this.recordRepository = recordRepository;
         this.deviceRepository = deviceRepository;
-        this.redisTemplate = redisTemplate; // <-- INJECTED
+        this.redisTemplate = redisTemplate;
+        this.threatLogService = threatLogService;
+        this.fcmNotificationService = fcmNotificationService;
     }
 
     // Heartbeat monitoring function
@@ -64,65 +75,79 @@ public class ThreatDataProcessor {
     /**
      * Entry point for processing messages received from the Azure IoT Hub stream.
      */
-    @Transactional
+@Transactional
     public void handleMessage(String rawJsonPayload) {
-        ThreatRecord record;
-        String liveUrl = null;
         try {
             Map<String, Object> dataMap = objectMapper.readValue(rawJsonPayload, Map.class);
+            String messageType = (String) dataMap.get("type");
 
-            if("HEARTBEAT".equals(dataMap.get("type"))){
+            if ("HEARTBEAT".equals(messageType)) {
                 handleHeartbeat(dataMap);
                 return;
             }
 
-            record = mapToThreatRecord(dataMap);
+            ThreatRecord record = mapToThreatRecord(dataMap);
+            String liveUrl = extractLiveUrl(dataMap);
 
-            if (dataMap.containsKey("ml_data")) {
-                Map<String, Object> ml = (Map<String, Object>) dataMap.get("ml_data");
-                liveUrl = (String) ml.get("liveStreamUrl");
-            }
-
-            // Save the record to the database
+            // 1. Permanent Persistence
             recordRepository.save(record);
-            log.info("Saved Threat Record ID {} for Device: {} | Level: {}", 
-                    record.getId(), record.getRawDeviceId(), record.getThreatLevel());
 
-            if ("INTRUDER".equals(dataMap.get("type"))) {
-                String dangerKey = "device:status:danger:" + record.getRawDeviceId();
-                // Flag the device as DANGER for 5 minutes in Redis
-                redisTemplate.opsForValue().set(dangerKey, "DANGER", Duration.ofMinutes(5));
-                log.error("INTRUDER ALERT TRIGGERED for Device: {}", record.getRawDeviceId());
+            // 2. Logic Differentiation: INTRUDER vs HIGH THREAT
+            if ("INTRUDER".equals(messageType)) {
+                triggerImminentThreat(record);
             }
             
-            // 4. Notification Logic
-            handleNotifications(record, liveUrl);
+            // 3. Notification & Live Update Logic
+            handleNotifications(record, liveUrl, messageType);
 
         } catch (IOException e) {
-            log.error("Failed to parse incoming JSON payload: {}", rawJsonPayload, e);
-            throw new RuntimeException("Invalid JSON format from IoT stream.", e);
+            log.error("Failed to parse IoT payload", e);
         }
     }
 
-    /**
-     * Determines what notifications or real-time actions are needed.
-     */
-    private void handleNotifications(ThreatRecord record, String liveUrl) {
-        if ("HIGH".equals(record.getThreatLevel())) {
+    private void triggerImminentThreat(ThreatRecord record) {
+        String dangerKey = "device:status:danger:" + record.getRawDeviceId();
+        // Set Redis 'DANGER' flag for 5 minutes for Dashboard UI
+        redisTemplate.opsForValue().set(dangerKey, "DANGER", Duration.ofMinutes(5));
+        log.error("IMMINENT THREAT: Device {} is in DANGER mode", record.getRawDeviceId());
+    }
 
-            // Camera (Ex: car/ml/front)
-            String cameraString = record.getCameraTopic().replace("/", ":");
-            String statusKey = "device:status:" + record.getRawDeviceId() + ":" + cameraString;
+    private void handleNotifications(ThreatRecord record, String liveUrl, String type) {
+        // 1. Get EVERYONE linked to this car instead of just one owner
+        List<User> usersToNotify = threatLogService.getAllUsersWithAccess(record.getDevice().getId());
+
+        // Prepare Push Notification Data
+        boolean isIntruder = "INTRUDER".equals(type);
+        String title = isIntruder ? "IMMINENT THREAT" : "High Threat Detected";
+        String body = record.getObjectDetected() + " detected near your car!";
         
-            if (liveUrl != null) {
-                // This stores the specific live feed for the FRONT or BACK camera
-                redisTemplate.opsForValue().set(statusKey, liveUrl, java.time.Duration.ofMinutes(3));
-                log.info("Live status cached for Camera: {} (Key: {})", record.getCameraTopic(), statusKey);
+        // 2. Loop through every user and trigger their individual FCM Push
+        if (usersToNotify != null && !usersToNotify.isEmpty() && ("HIGH".equals(record.getThreatLevel()) || isIntruder)) {
+            for (User user : usersToNotify) {
+                try {
+                    fcmNotificationService.sendThreatNotification(user, title, body, isIntruder);
+                } catch (Exception e) {
+                    log.error("Failed to send notification to user: {}", user.getEmail(), e);
+                }
             }
-            // Broadcast to WebSocket
-            record.setLiveStreamUrl(liveUrl);   
-            redisTemplate.convertAndSend(REDIS_ALERT_CHANNEL, record);
         }
+
+        // 3. Cache live URL in Redis for Dashboard (Same as before)
+        if (liveUrl != null) {
+            String statusKey = "device:status:" + record.getRawDeviceId() + ":" + record.getCameraTopic().replace("/", ":");
+            redisTemplate.opsForValue().set(statusKey, liveUrl, Duration.ofMinutes(3));
+        }
+
+        // 4. Broadcast to WebSockets (Same as before)
+        record.setLiveStreamUrl(liveUrl);
+        redisTemplate.convertAndSend(REDIS_ALERT_CHANNEL, record);
+    }
+    private String extractLiveUrl(Map<String, Object> dataMap) {
+        if (dataMap.containsKey("ml_data")) {
+            Map<String, Object> ml = (Map<String, Object>) dataMap.get("ml_data");
+            return (String) ml.get("liveStreamUrl");
+        }
+        return null;
     }
 
     // This method maps the JSON data to a ThreatRecord object

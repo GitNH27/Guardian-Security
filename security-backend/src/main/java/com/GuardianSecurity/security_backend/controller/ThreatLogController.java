@@ -3,6 +3,8 @@ package com.GuardianSecurity.security_backend.controller;
 import com.GuardianSecurity.security_backend.dto.response.ThreatLogResponse;
 import com.GuardianSecurity.security_backend.service.ThreatLogService;
 import com.GuardianSecurity.security_backend.service.VerifyEmail;
+import com.GuardianSecurity.security_backend.service.FcmNotificationService;
+import com.GuardianSecurity.security_backend.model.ThreatRecord;
 
 import jakarta.validation.Valid;
 
@@ -22,10 +24,12 @@ public class ThreatLogController {
 
     private final ThreatLogService threatLogService;
     private final VerifyEmail verifyEmail;
+    private final FcmNotificationService fcmNotificationService;
 
-    public ThreatLogController(ThreatLogService threatLogService, VerifyEmail verifyEmail) {
+    public ThreatLogController(ThreatLogService threatLogService, VerifyEmail verifyEmail, FcmNotificationService fcmNotificationService) {
         this.threatLogService = threatLogService;
         this.verifyEmail = verifyEmail;
+        this.fcmNotificationService = fcmNotificationService;
     }
 
     // Endpoint to get all threat logs for a specific device

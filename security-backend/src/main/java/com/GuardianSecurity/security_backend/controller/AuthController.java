@@ -7,7 +7,9 @@ import com.GuardianSecurity.security_backend.dto.response.AuthResponse;
 import com.GuardianSecurity.security_backend.dto.response.UserResponse;
 import com.GuardianSecurity.security_backend.dto.response.VerifyUserResponse;
 import com.GuardianSecurity.security_backend.service.AuthService;
-
+import com.GuardianSecurity.security_backend.dto.request.FcmTokenRequest;
+import com.GuardianSecurity.security_backend.service.FcmTokenService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.GuardianSecurity.security_backend.service.VerifyEmail;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,10 +27,12 @@ public class AuthController {
 
     private final AuthService authService;
     private final VerifyEmail verifyEmail;
-
-    public AuthController(AuthService authService, VerifyEmail verifyEmail) {
+    private final FcmTokenService fcmTokenService;
+    
+    public AuthController(AuthService authService, VerifyEmail verifyEmail, FcmTokenService fcmTokenService) {
         this.authService = authService;
         this.verifyEmail = verifyEmail;
+        this.fcmTokenService = fcmTokenService;
     }
 
     @PostMapping("/verifycode")
@@ -59,13 +63,26 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(authResponse);
     }
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @PostMapping("/register-fcm")
+    public ResponseEntity<String> registerFcmToken(
+            @Valid @RequestBody FcmTokenRequest request, 
+            @AuthenticationPrincipal User user) { // 2. Get the current user automatically
+        
+        // 3. Link the token to the user found in the security context
+        fcmTokenService.saveOrUpdateToken(user, request.getToken(), request.getDeviceName());
+        
+        return ResponseEntity.status(HttpStatus.OK).body("Device successfully registered for security alerts");
+    }
 
-    @GetMapping("/test")
-    public boolean test() {
-        return passwordEncoder.matches("N_hummer27", 
-            "$2a$10$WGsgkNQ6UjULGpbu7bJR/eZAPsm900gz3NiOmLgqOlB.DdRt8M1PG"); // paste hash from DB
+    @PostMapping("/logout-fcm")
+    public ResponseEntity<String> removeFcmToken(
+            @RequestBody java.util.Map<String, String> body,
+            @AuthenticationPrincipal User user) {
+        
+        String token = body.get("token");
+        fcmTokenService.removeToken(user, token);
+        
+        return ResponseEntity.ok("Device unregistered successfully");
     }
 
 }

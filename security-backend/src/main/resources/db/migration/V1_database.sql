@@ -79,6 +79,15 @@ CREATE TABLE threat_records (
 
 INSERT INTO devices (id, serial_number, pairing_password, status) VALUES ('1', 'DEV-GAMMA-789-RPI', 'DEMOPASS789', 'UNCLAIMED');
 
+-- Create table for multiple FCM tokens per user
+CREATE TABLE user_fcm_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    device_name VARCHAR(255), -- e.g., 'Pixel 7', 'iPhone 15'
+    last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_token_per_user UNIQUE (user_id, token)
+);
 
 -- Create indexes for performance
 CREATE INDEX idx_users_email ON users(email);
@@ -88,3 +97,4 @@ CREATE INDEX idx_devices_status ON devices(status);
 CREATE INDEX idx_device_access_user_id ON device_access(user_id);
 CREATE INDEX idx_device_access_device_id ON device_access(device_id);
 CREATE INDEX idx_device_access_role ON device_access(role);
+CREATE INDEX idx_fcm_tokens_user_id ON user_fcm_tokens(user_id);
