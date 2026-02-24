@@ -160,7 +160,6 @@ export default function HomeScreen({ navigation }) {
           activeDevice={activeDevice}
           hasDevice={hasDevice}
           role={role}
-          onSwitchDevice={handleSwitchDevice}
         />
 
         {/* Status Banner */}
@@ -179,9 +178,9 @@ export default function HomeScreen({ navigation }) {
           />
           
           <DashboardCard 
-            title="Threat Status" 
-            icon="shield-checkmark-outline" 
-            onPress={() => Alert.alert("Status", `Level: ${currentThreatLevel}`)} 
+            title="Select Device" 
+            icon="car-sport-outline" 
+            onPress={handleSwitchDevice} 
             disabled={!hasDevice}
           />
           

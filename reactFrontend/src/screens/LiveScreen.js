@@ -100,11 +100,7 @@ export default function LiveScreen({ navigation }) {
             <Ionicons name="refresh" size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
-
-        <Text style={sharedStyles.subtitle}>
-          System Status: <Text style={{ color: '#4CAF50' }}>ACTIVE</Text>
-        </Text>
-
+        
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center' }}>
             <ActivityIndicator size="large" color={COLORS.primary} />
