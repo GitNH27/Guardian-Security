@@ -19,6 +19,7 @@ import com.GuardianSecurity.security_backend.dto.request.DeviceClaimRequest;
 import com.GuardianSecurity.security_backend.dto.request.AccessDeviceRequest;
 import com.GuardianSecurity.security_backend.dto.request.OwnerDecisionRequest;
 import com.GuardianSecurity.security_backend.dto.request.OwnerDecisionRequest.Decision;
+import com.GuardianSecurity.security_backend.dto.request.TransferOwnershipRequest;
 import com.GuardianSecurity.security_backend.dto.response.AccessDeviceResponse;
 import com.GuardianSecurity.security_backend.model.DeviceAccessPermission;
 import com.GuardianSecurity.security_backend.model.DeviceAccessPermission.Status;
@@ -220,5 +221,39 @@ public class DeviceService {
         if (accessOpt.isEmpty()) {
             throw new IllegalArgumentException("User does not have access to the device.");
         }
+    }
+
+    @Transactional
+    public void transferDeviceOwnership(TransferOwnershipRequest request) {
+        User currentOwner = getCurrentUser();
+
+        // 1. Verify current requester is the OWNER
+        DeviceAccess currentOwnerAccess = deviceAccessRepository
+                .findByUserIdAndDeviceSerialNumber(currentOwner.getId(), request.getDeviceSerialNumber())
+                .orElseThrow(() -> new IllegalArgumentException("Device access not found."));
+
+        if (currentOwnerAccess.getRole() != Role.OWNER) {
+            throw new IllegalStateException("Only the current owner can transfer ownership.");
+        }
+
+        // 2. Find the target user by email
+        User targetUser = userRepository.findByEmail(request.getNewOwnerEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Target user not found."));
+
+        // 3. MANDATORY CHECK: Target user must already be a MEMBER of this device
+        DeviceAccess targetUserAccess = deviceAccessRepository
+                .findByUserIdAndDeviceSerialNumber(targetUser.getId(), request.getDeviceSerialNumber())
+                .orElseThrow(() -> new IllegalArgumentException("Ownership can only be transferred to an existing member of this device."));
+
+        if (targetUserAccess.getRole() != Role.MEMBER) {
+            throw new IllegalStateException("Target user is already an owner or has invalid role.");
+        }
+
+        // 4. Atomic Role Swap
+        targetUserAccess.setRole(Role.OWNER);
+        currentOwnerAccess.setRole(Role.MEMBER);
+
+        deviceAccessRepository.save(targetUserAccess);
+        deviceAccessRepository.save(currentOwnerAccess);
     }
 }

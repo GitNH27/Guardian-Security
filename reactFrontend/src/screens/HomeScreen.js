@@ -66,45 +66,30 @@ export default function HomeScreen({ navigation }) {
 
           // ALWAYS refresh devices from backend
           const response = await deviceService.getDeviceSelectionContext();
-          
-          if (response.devices && response.devices.length > 0) {
-            setAllDevices(response.devices);  // Update all devices for threat monitoring
 
-            const storedActiveId = await SecureStore.getItemAsync('activeDeviceId');
+          // Check for the single device object OR the devices array
+          const deviceToUse = response.device || (response.devices && response.devices[0]);
 
-            let selectedDevice =
-              response.devices.find(
-                d => d.deviceId.toString() === storedActiveId
-              ) || response.devices[0]; // fallback only
-
-            setActiveDevice(selectedDevice);
-            setRole(selectedDevice.role || 'USER');
+          if (deviceToUse) {
+            setAllDevices(response.devices || [response.device]);
+            
+            setActiveDevice(deviceToUse);
+            setRole(deviceToUse.role || 'MEMBER'); 
             setHasDevice(true);
 
-            // Keep ID in sync (important when new device is added)
-            await SecureStore.setItemAsync(
-              'activeDeviceId',
-              selectedDevice.deviceId.toString()
-            );
-            // Save the serial number so the Logs screen can use it
-            await SecureStore.setItemAsync(
-              'activeDeviceSerial',
-              selectedDevice.serialNumber);
+            // Sync SecureStore
+            await SecureStore.setItemAsync('activeDeviceId', String(deviceToUse.deviceId));
+            await SecureStore.setItemAsync('activeDeviceSerial', deviceToUse.serialNumber);
 
-              const currentDevice = selectedDevice; 
+            refreshSystemStatus(deviceToUse.deviceId);
 
-            // Initial status fetch and start polling
-            refreshSystemStatus(currentDevice.deviceId);
-            
-            statusInterval = setInterval(() => {
-              refreshSystemStatus(currentDevice.deviceId);
-            }, 20000); // Poll every 20 seconds
-            
           } else {
+            // Reset logic if no devices exist
             setActiveDevice(null);
             setRole('USER');
             setHasDevice(false);
             await SecureStore.deleteItemAsync('activeDeviceId');
+            await SecureStore.deleteItemAsync('activeDeviceSerial');
           }
 
         } catch (e) {

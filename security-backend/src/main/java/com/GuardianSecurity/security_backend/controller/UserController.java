@@ -2,8 +2,10 @@ package com.GuardianSecurity.security_backend.controller;
 
 import com.GuardianSecurity.security_backend.model.User;
 import com.GuardianSecurity.security_backend.dto.request.UpdateUserRequest;
+import com.GuardianSecurity.security_backend.dto.request.TransferOwnershipRequest;
 import com.GuardianSecurity.security_backend.dto.request.UpdatePasswordRequest;
 import com.GuardianSecurity.security_backend.service.UserService;
+import com.GuardianSecurity.security_backend.service.DeviceService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,9 +18,11 @@ import jakarta.validation.Valid;
 public class UserController {
 
     private final UserService userService;
+    private final DeviceService deviceService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, DeviceService deviceService) {
         this.userService = userService;
+        this.deviceService = deviceService;
     }
 
     @PutMapping("/{id}")
@@ -47,4 +51,19 @@ public class UserController {
         User updatedUser = userService.updateUserPassword(id, request);
         return ResponseEntity.ok(updatedUser);
     }
+
+    @PostMapping("/{id}/device/transfer")
+    public ResponseEntity<Void> transferOwnership(@PathVariable Long id, @RequestBody @Valid TransferOwnershipRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) auth.getPrincipal();
+
+        // Ensure the authenticated user is the one associated with the ID in the path
+        if (!currentUser.getId().equals(id)) {
+            return ResponseEntity.status(403).build();
+        }
+
+        deviceService.transferDeviceOwnership(request);
+        return ResponseEntity.ok().build();
+    }
+
 }
