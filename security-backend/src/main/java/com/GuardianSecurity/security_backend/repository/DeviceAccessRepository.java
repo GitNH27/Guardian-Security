@@ -13,6 +13,9 @@ public interface DeviceAccessRepository extends JpaRepository<DeviceAccess, Long
     // Find all users who have access to a specific device
     List<DeviceAccess> findAllByDeviceId(Long deviceId);
 
+    // Find all access records for a specific device
+    List<DeviceAccess> findAllByDeviceSerialNumber(String serialNumber);
+
     // Find All devices user has access to
     List<DeviceAccess> findAllByUserId(Long userId);
 }

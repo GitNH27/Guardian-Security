@@ -5,6 +5,8 @@ import com.GuardianSecurity.security_backend.dto.request.UpdatePasswordRequest;
 import com.GuardianSecurity.security_backend.dto.request.UpdateUserRequest;
 import org.springframework.stereotype.Service;
 
+import com.GuardianSecurity.security_backend.dto.response.UserResponse;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
@@ -18,31 +20,46 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public User updateUser(Long id, UpdateUserRequest user) {
+    public UserResponse updateUser(Long id, UpdateUserRequest userRequest) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if ((user.getFirstName() != null) && (!user.getFirstName().equals(existingUser.getFirstName()))) {
-            existingUser.setFirstName(user.getFirstName());
+        if ((userRequest.getFirstName() != null) && (!userRequest.getFirstName().equals(existingUser.getFirstName()))) {
+            existingUser.setFirstName(userRequest.getFirstName());
         }
-        if ((user.getLastName() != null) && (!user.getLastName().equals(existingUser.getLastName()))) {
-            existingUser.setLastName(user.getLastName());
+        if ((userRequest.getLastName() != null) && (!userRequest.getLastName().equals(existingUser.getLastName()))) {
+            existingUser.setLastName(userRequest.getLastName());
         }
-        if ((user.getEmail() != null) && (!user.getEmail().equals(existingUser.getEmail()))) {
-            existingUser.setEmail(user.getEmail());
+        if ((userRequest.getEmail() != null) && (!userRequest.getEmail().equals(existingUser.getEmail()))) {
+            existingUser.setEmail(userRequest.getEmail());
         }
-        return userRepository.save(existingUser);
+        
+        User savedUser = userRepository.save(existingUser);
+        
+        // Map Entity to DTO
+        return new UserResponse(
+            savedUser.getId(), 
+            savedUser.getEmail(), 
+            savedUser.getFirstName(), 
+            savedUser.getLastName()
+        );
     }
 
-    // Password update and validation logic
-    public User updateUserPassword(Long id, UpdatePasswordRequest request) {
+    public UserResponse updateUserPassword(Long id, UpdatePasswordRequest request) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (passwordEncoder.matches(request.getOldPassword(), existingUser.getPasswordHash())) {
             if (request.getNewPassword().equals(request.getConfirmPassword())) {
                 existingUser.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
-                return userRepository.save(existingUser);
+                User savedUser = userRepository.save(existingUser);
+                
+                return new UserResponse(
+                    savedUser.getId(), 
+                    savedUser.getEmail(), 
+                    savedUser.getFirstName(), 
+                    savedUser.getLastName()
+                );
             } else {
                 throw new IllegalArgumentException("New password and confirmation do not match");
             }

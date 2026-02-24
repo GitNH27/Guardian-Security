@@ -101,6 +101,17 @@ export const deviceService = {
       // Return a fallback status so the UI doesn't crash
       return { status: "OFFLINE", message: "Connection Error" };
     }
+  },
+
+  // In deviceService.js
+  getDeviceMembers: async (serialNumber) => {
+    try {
+      const response = await apiClient.get(`/device/${serialNumber}/members`);
+      return response.data;
+    } catch (error) {
+      console.error("DeviceService [getDeviceMembers] Error:", error.response?.data || error.message);
+      throw error;
+    }
   }
 
 };

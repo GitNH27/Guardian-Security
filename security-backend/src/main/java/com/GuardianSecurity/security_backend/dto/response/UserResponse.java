@@ -1,5 +1,7 @@
 package com.GuardianSecurity.security_backend.dto.response;
 
+import com.GuardianSecurity.security_backend.model.User;
+
 public class UserResponse {
     private Long id;
     private String email;
@@ -11,6 +13,13 @@ public class UserResponse {
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
+    }
+
+    public UserResponse(User user) {
+        this.id = user.getId();
+        this.email = user.getEmail();
+        this.firstName = user.getFirstName();
+        this.lastName = user.getLastName();
     }
 
     public Long getId() {

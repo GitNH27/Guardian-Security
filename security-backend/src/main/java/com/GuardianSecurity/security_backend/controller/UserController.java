@@ -1,6 +1,7 @@
 package com.GuardianSecurity.security_backend.controller;
 
 import com.GuardianSecurity.security_backend.model.User;
+import com.GuardianSecurity.security_backend.dto.response.UserResponse;
 import com.GuardianSecurity.security_backend.dto.request.UpdateUserRequest;
 import com.GuardianSecurity.security_backend.dto.request.TransferOwnershipRequest;
 import com.GuardianSecurity.security_backend.dto.request.UpdatePasswordRequest;
@@ -26,7 +27,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody @Valid UpdateUserRequest request) {
+    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @RequestBody @Valid UpdateUserRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) auth.getPrincipal();
 
@@ -34,13 +35,12 @@ public class UserController {
             return ResponseEntity.status(403).build();
         }
 
-        User updatedUser = userService.updateUser(id, request);
-        return ResponseEntity.ok(updatedUser);
+        UserResponse response = userService.updateUser(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}/password")
-    public ResponseEntity<User> updateUserPassword(@PathVariable Long id, @RequestBody @Valid UpdatePasswordRequest request) {
-
+    public ResponseEntity<UserResponse> updateUserPassword(@PathVariable Long id, @RequestBody @Valid UpdatePasswordRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) auth.getPrincipal();
 
@@ -48,8 +48,8 @@ public class UserController {
             return ResponseEntity.status(403).build();
         }
 
-        User updatedUser = userService.updateUserPassword(id, request);
-        return ResponseEntity.ok(updatedUser);
+        UserResponse response = userService.updateUserPassword(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{id}/device/transfer")
@@ -65,5 +65,4 @@ public class UserController {
         deviceService.transferDeviceOwnership(request);
         return ResponseEntity.ok().build();
     }
-
 }

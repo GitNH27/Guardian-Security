@@ -159,7 +159,11 @@ export default function HomeScreen({ navigation }) {
           <DashboardCard 
             title="User Settings" 
             icon="settings-outline" 
-            onPress={() => navigation.navigate('Settings')} 
+            onPress={() => navigation.navigate('UserSettings', 
+              { currentRole: role, 
+                activeSerial: activeDevice?.serialNumber 
+              })} // Pass role here
+            disabled={!hasDevice}
           />
           
           <DashboardCard 

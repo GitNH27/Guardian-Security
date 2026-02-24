@@ -25,6 +25,8 @@ import com.GuardianSecurity.security_backend.model.DeviceAccessPermission;
 import com.GuardianSecurity.security_backend.model.DeviceAccessPermission.Status;
 import com.GuardianSecurity.security_backend.repository.DeviceAccessPermissionRepository;
 
+import com.GuardianSecurity.security_backend.dto.response.UserResponse;
+
 import com.GuardianSecurity.security_backend.service.helper.OwnerDeviceValidationResult;
 
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -255,5 +257,26 @@ public class DeviceService {
 
         deviceAccessRepository.save(targetUserAccess);
         deviceAccessRepository.save(currentOwnerAccess);
+    }
+
+    public List<UserResponse> getDeviceMembers(String serialNumber) {
+        User owner = getCurrentUser();
+        
+        // Verify the requester is actually the owner
+        DeviceAccess ownerAccess = deviceAccessRepository
+                .findByUserIdAndDeviceSerialNumber(owner.getId(), serialNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Device not found."));
+
+        if (ownerAccess.getRole() != Role.OWNER) {
+            throw new IllegalStateException("Only the owner can view the member list.");
+        }
+
+        // Fetch all access records for this device
+        List<DeviceAccess> allAccess = deviceAccessRepository.findAllByDeviceSerialNumber(serialNumber);
+
+        return allAccess.stream()
+                .filter(access -> access.getRole() == Role.MEMBER) // Only return members, not the owner
+                .map(access -> new UserResponse(access.getUser()))
+                .collect(Collectors.toList());
     }
 }

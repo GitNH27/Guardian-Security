@@ -17,6 +17,7 @@ import com.GuardianSecurity.security_backend.dto.response.DecisionOnMember;
 import com.GuardianSecurity.security_backend.dto.response.DeviceStatusResponse;
 import com.GuardianSecurity.security_backend.dto.response.LiveFeedResponse;
 import com.GuardianSecurity.security_backend.service.helper.OwnerDeviceValidationResult;
+import com.GuardianSecurity.security_backend.dto.response.UserResponse;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -102,6 +103,13 @@ public class DeviceController {
     public ResponseEntity<DeviceStatusResponse> getSystemStatus(@PathVariable Long deviceId) {
         DeviceStatusResponse status = deviceStatusService.getDeviceSystemStatus(deviceId);
         return ResponseEntity.status(HttpStatus.OK).body(status);
+    }
+
+    @GetMapping("/{serialNumber}/members")
+    public ResponseEntity<List<UserResponse>> getDeviceMembers(@PathVariable String serialNumber) {
+        // This calls the method you already added to DeviceService
+        List<UserResponse> members = deviceService.getDeviceMembers(serialNumber);
+        return ResponseEntity.ok(members);
     }
 
 }
