@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../styles/theme';
+import { COLORS, SPACING } from '../styles/theme';
 import { sharedStyles } from '../styles/sharedStyles';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
