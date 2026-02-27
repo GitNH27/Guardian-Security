@@ -98,3 +98,4 @@ CREATE INDEX idx_device_access_user_id ON device_access(user_id);
 CREATE INDEX idx_device_access_device_id ON device_access(device_id);
 CREATE INDEX idx_device_access_role ON device_access(role);
 CREATE INDEX idx_fcm_tokens_user_id ON user_fcm_tokens(user_id);
+CREATE INDEX idx_threat_serial_date ON threat_records (device_id, created_at DESC);

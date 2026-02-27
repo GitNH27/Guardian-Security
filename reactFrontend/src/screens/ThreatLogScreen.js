@@ -27,15 +27,18 @@ export default function ThreatLogScreen({ navigation }) {
       
       const [storedSerial, storedEmail] = await Promise.all([
         SecureStore.getItemAsync('activeDeviceSerial'),
-        SecureStore.getItemAsync('userEmail') // Ensure you save this key during Login!
+        SecureStore.getItemAsync('userEmail')
       ]);
+      
       setUserEmail(storedEmail);
       setSerialNumber(storedSerial || "Unknown Device");
 
       if (storedSerial) {
         // Pass the activeFilters object to the service call
         const data = await threatLogService.getThreatLogs(storedSerial, activeFilters);
-        const sortedLogs = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        // Sorting by createdAt (ensure your backend uses this field name)
+        const sortedLogs = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setLogs(sortedLogs);
       }
     } catch (error) {
@@ -54,7 +57,7 @@ export default function ThreatLogScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       fetchLogs();
-    }, [])
+    }, [activeFilters])
   );
 
   const onRefresh = () => {
@@ -64,9 +67,9 @@ export default function ThreatLogScreen({ navigation }) {
 
   return (
     <SafeAreaView style={sharedStyles.safeArea}>
-      <View style={sharedStyles.container}>
+      <View style={[sharedStyles.container, { flex: 1 }]}>
         
-        {/* Header */}
+        {/* Header - Remains fixed at the top */}
         <View style={sharedStyles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
@@ -75,30 +78,49 @@ export default function ThreatLogScreen({ navigation }) {
           <View style={{ width: 24 }} /> 
         </View>
 
-        {/* 4. Filter Component: Positioned above the list */}
-        <LogFilter onApplyFilters={(filters) => setActiveFilters(filters)} />
-
-        <Text style={[sharedStyles.subtitle, { marginBottom: 20 }]}>
-          Device: {serialNumber}
-        </Text>
-
-        {loading ? (
-          <View style={{ flex: 1, justifyContent: 'center' }}>
+        {loading && !refreshing ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={{ color: COLORS.textHint, marginTop: 10 }}>Loading Logs...</Text>
           </View>
         ) : (
           <FlatList
             data={logs}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => <LogEntryCard item={item} userEmail={userEmail} />}
-            contentContainerStyle={{ paddingBottom: 20 }}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+            
+            // CRITICAL FIX: The Filter and Subtitle move with the scroll
+            ListHeaderComponent={
+              <View style={{ paddingTop: 10 }}>
+                <LogFilter onApplyFilters={(filters) => setActiveFilters(filters)} />
+                
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                  <Text style={[sharedStyles.subtitle, { marginBottom: 0 }]}>
+                    Device: {serialNumber}
+                  </Text>
+                  {Object.keys(activeFilters).length > 0 && (
+                    <View style={{ backgroundColor: 'rgba(212, 175, 55, 0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
+                      <Text style={{ color: COLORS.primary, fontSize: 10, fontWeight: 'bold' }}>FILTER ACTIVE</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
             }
+            
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh} 
+                tintColor={COLORS.primary} 
+                colors={[COLORS.primary]}
+              />
+            }
+            
             ListEmptyComponent={
               <View style={{ alignItems: 'center', marginTop: 50 }}>
                 <Ionicons name="document-text-outline" size={60} color={COLORS.textHint} />
-                <Text style={[sharedStyles.hintText, { fontSize: 16 }]}>
+                <Text style={[sharedStyles.hintText, { fontSize: 16, marginTop: 10 }]}>
                     {Object.keys(activeFilters).length > 0 
                       ? "No logs match your filters." 
                       : "No recent activity detected."}
