@@ -10,14 +10,15 @@ export const VideoPlayer = ({ videoUrl }) => {
     <View style={styles.container}>
       <WebView
         source={{ uri: videoUrl }}
-        // 1. Critical: Allows the http://192.168... stream to load
+        // Keep this for now if your video stream isn't https yet
         mixedContentMode="always" 
-        // 2. Critical: Uses GPU to decode the video stream (saves battery)
         androidLayerType="hardware"
-        // 3. Fixes the "Zoomed in" scaling issue
         scalesPageToFit={true}
-        // 4. Ensures video doesn't white-flash while loading
         style={{ backgroundColor: 'black' }}
+        // ADDED: Helps with Azure/Cloud authentication if needed
+        sharedCookiesEnabled={true} 
+        // ADDED: Standard for modern web-based video players
+        originWhitelist={['*']} 
         javaScriptEnabled
         domStorageEnabled
         allowsInlineMediaPlayback

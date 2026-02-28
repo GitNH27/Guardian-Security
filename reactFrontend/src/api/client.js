@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 const apiClient = axios.create({
   // Use 10.0.2.2 for Android Emulator, localhost for iOS
   // School Wi-Fi - 10.216.124.196
-  baseURL: Platform.OS === 'android' ? 'http://10.0.2.2:8080/api' : 'http://localhost:8080/api',
+  baseURL: 'https://guardian-backend-api-cehse7acc4bfhcdq.canadacentral-01.azurewebsites.net/api',
   headers: {
     'Content-Type': 'application/json',
   },

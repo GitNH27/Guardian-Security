@@ -101,7 +101,7 @@ export const useThreatMonitor = (rawDeviceIds = []) => {
 
     const client = new Client({
       webSocketFactory: () => new WebSocket(
-        'ws://192.168.2.78:8080/ws-security', 
+        'wss://guardian-backend-api-cehse7acc4bfhcdq.canadacentral-01.azurewebsites.net/ws-security', 
         ['v12.stomp', 'v11.stomp', 'v10.stomp']
       ),
       reconnectDelay: 5000,
