@@ -47,8 +47,14 @@ export default function LiveScreen({ navigation }) {
 
         const sanitizedFeeds = {};
         Object.entries(feeds).forEach(([camera, url]) => {
-          sanitizedFeeds[camera] = url.replace(/["\\]/g, '').trim();
+          if (url) {
+            // This regex is a 'nuke' for any character that shouldn't be in a URL
+            // It removes literal quotes ("), backslashes (\), and whitespace
+            const cleanUrl = url.replace(/["\\]/g, '').trim();
+            sanitizedFeeds[camera] = cleanUrl;
+          }
         });
+        console.log('[LiveScreen] VERIFIED CLEAN URL:', sanitizedFeeds); 
         setActiveFeeds(sanitizedFeeds);
 
       }
@@ -66,13 +72,18 @@ export default function LiveScreen({ navigation }) {
 
   // Sync with WebSocket "Push" updates
   useEffect(() => {
+    // Check if we have the nested ml_data object
     if (lastThreat?.ml_data?.liveStreamUrl) {
-      const topic = lastThreat.cameraTopic || 'General';
+      const topic = lastThreat.cameraTopic || 'front';
+      const level = lastThreat.ml_data.level; // HIGH, MEDIUM, etc.
+      const objectName = lastThreat.ml_data.object; // Person, etc.
 
-      // Clean the URL (remove quotes if present)
+      console.log(`[LiveScreen] New ${level} Threat: ${objectName} on ${topic}`);
+
       const rawUrl = lastThreat.ml_data.liveStreamUrl;
       let cleanUrl = rawUrl.replace(/["\\]/g, '').trim();
 
+      console.log('[LiveScreen] VERIFIED CLEAN URL:', cleanUrl);
 
       setActiveFeeds(prev => ({
         ...prev,

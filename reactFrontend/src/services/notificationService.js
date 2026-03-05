@@ -2,8 +2,31 @@ import apiClient from '../api/client';
 import messaging from '@react-native-firebase/messaging';
 import * as SecureStore from 'expo-secure-store';
 
+// 1. Throttling State
+let isCooldownActive = false;
+const THROTTLE_LIMIT = 30000; // 30 seconds
+
+const shouldProcessNotification = () => {
+  if (isCooldownActive) {
+    console.log("[Throttled] Notification ignored during cooldown");
+    return false;
+  }
+
+  // Allow the notification
+  isCooldownActive = true;
+
+  console.log("[Notification Allowed] Starting cooldown");
+
+  setTimeout(() => {
+    isCooldownActive = false;
+    console.log("[Cooldown Ended] Notifications allowed again");
+  }, THROTTLE_LIMIT);
+
+  return true;
+};
+
 export const registerForPushNotifications = async () => {
-    try {
+  try {
     const authStatus = await messaging().requestPermission();
     const enabled =
       authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
@@ -12,9 +35,7 @@ export const registerForPushNotifications = async () => {
     if (enabled) {
       const token = await messaging().getToken();
       console.log('FCM TOKEN: ', token);
-      
       await SecureStore.setItemAsync('fcm_token', token);
-      
       return token;
     }
   } catch (error) {
@@ -22,24 +43,48 @@ export const registerForPushNotifications = async () => {
   }
 };
 
-// FCM Token Refresh (Update database when token changes)
-export const setupFCMTokenRefreshListener = () => {
-    messaging().onTokenRefresh(token => {
-        console.log("FCM Token Refreshed:", token);
-        authService.updateFcmToken(token); 
-    });
+// FCM Token Refresh
+export const setupFCMTokenRefreshListener = (userJwt) => {
+  return messaging().onTokenRefresh(token => {
+    console.log("FCM Token Refreshed:", token);
+    // Ensure you pass the JWT if syncing immediately
+    syncFcmTokenWithBackend(token, userJwt); 
+  });
 };
 
-// Add this to your existing notification file
+/**
+ * LISTENERS: This is where the 30s limit is enforced
+ */
+export const setupNotificationHandlers = () => {
+  // Foreground Listener
+  const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
+    if (!shouldProcessNotification()) return;
+
+    console.log('New Foreground Notification:', remoteMessage.data);
+    // Trigger your Alert, Sound, or UI update here
+  });
+
+  // Background/Quit State handler (Must be outside any component)
+  messaging().setBackgroundMessageHandler(async remoteMessage => {
+    if (!shouldProcessNotification()) return;
+    
+    console.log('Handling Background Message:', remoteMessage.data);
+    // Note: Background handlers should return a promise
+    return Promise.resolve();
+  });
+
+  return unsubscribeForeground;
+};
+
 export const syncFcmTokenWithBackend = async (fcmToken, userJwt) => {
+  if (!userJwt) return;
+  
   try {
-    // 1. Data Body (Second Argument)
     const data = {
       token: fcmToken,
-      deviceName: "Android Emulator"
+      deviceName: "Mobile Device" 
     };
 
-    // 2. Config/Headers (Third Argument)
     const config = {
       headers: {
         'Authorization': `Bearer ${userJwt}`
@@ -47,13 +92,10 @@ export const syncFcmTokenWithBackend = async (fcmToken, userJwt) => {
     };
 
     const response = await apiClient.post('/auth/register-fcm', data, config);
-
-    // Axios considers 2xx status as success automatically
     console.log("Database synced with FCM Token");
     return response.data;
 
   } catch (error) {
-    // Better error logging to see what the server says
     const serverMessage = error.response?.data?.message || error.message;
     console.error("Sync failed:", serverMessage);
   }

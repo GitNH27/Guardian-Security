@@ -22,7 +22,8 @@ export default function FullStreamScreen({ route, navigation }) {
       {/* Main Video View */}
       <View style={styles.videoContainer}>
         <VideoPlayer 
-          videoUrl={url} 
+          videoUrl={url}
+          fullscreen
         />
       </View>
 

@@ -1,33 +1,52 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../styles/theme';
 
-export const VideoPlayer = ({ videoUrl }) => {
+export const VideoPlayer = ({ videoUrl, fullscreen = false }) => {
+
+  const webviewRef = useRef(null);
+
   if (!videoUrl) return null;
 
+  const cleanUrl = videoUrl.replace(/[\\"]/g, '').trim();
+
+  // Reload stream when returning to screen
+  useFocusEffect(
+    React.useCallback(() => {
+      if (webviewRef.current) {
+        webviewRef.current.reload();
+      }
+    }, [])
+  );
+
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      fullscreen && styles.fullscreenContainer
+    ]}>
+
       <WebView
-        source={{ uri: videoUrl }}
-        // Keep this for now if your video stream isn't https yet
-        mixedContentMode="always" 
-        androidLayerType="hardware"
-        scalesPageToFit={true}
-        style={{ backgroundColor: 'black' }}
-        // ADDED: Helps with Azure/Cloud authentication if needed
-        sharedCookiesEnabled={true} 
-        // ADDED: Standard for modern web-based video players
-        originWhitelist={['*']} 
+        ref={webviewRef}
+        source={{ uri: cleanUrl }}
+        originWhitelist={['*']}
         javaScriptEnabled
         domStorageEnabled
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}
+        mixedContentMode="always"
+        cacheEnabled={false}
+        sharedCookiesEnabled
+        style={{ backgroundColor: 'black' }}
       />
+
     </View>
   );
 };
+
 const styles = StyleSheet.create({
+
   container: {
     height: 150,
     backgroundColor: '#000',
@@ -36,4 +55,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.primary,
   },
+
+  fullscreenContainer: {
+    flex: 1,
+    height: '100%',
+    borderWidth: 0,
+    borderRadius: 0,
+  }
+
 });
