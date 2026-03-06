@@ -14,10 +14,8 @@ export const VideoPlayer = ({ videoUrl, fullscreen = false }) => {
 
   // Reload stream when returning to screen
   useFocusEffect(
-    React.useCallback(() => {
-      if (webviewRef.current) {
-        webviewRef.current.reload();
-      }
+    useCallback(() => {
+      setWebKey(prev => prev + 1);
     }, [])
   );
 
@@ -28,6 +26,7 @@ export const VideoPlayer = ({ videoUrl, fullscreen = false }) => {
     ]}>
 
       <WebView
+        key={webKey}
         ref={webviewRef}
         source={{ uri: cleanUrl }}
         originWhitelist={['*']}
@@ -39,6 +38,7 @@ export const VideoPlayer = ({ videoUrl, fullscreen = false }) => {
         cacheEnabled={false}
         sharedCookiesEnabled
         style={{ backgroundColor: 'black' }}
+        allowsFullscreenVideo={true}
       />
 
     </View>

@@ -22,8 +22,12 @@ export default function LiveScreen({ navigation }) {
   const [deviceInfo, setDeviceInfo] = useState({ id: null, serial: null });
 
   // WebSocket Hook for real-time "Push" updates
-  const threats = useThreatMonitor(deviceInfo.id ? [deviceInfo.id] : []);
-  
+  const deviceIds = React.useMemo(() => {
+    return deviceInfo.id ? [deviceInfo.id] : [];
+  }, [deviceInfo.id]);
+
+  const threats = useThreatMonitor(deviceIds);
+    
   // Get the latest threat for this device
   const lastThreat = deviceInfo.id ? threats[deviceInfo.id] : null;
   

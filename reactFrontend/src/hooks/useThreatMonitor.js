@@ -7,74 +7,80 @@ global.TextDecoder = TextDecoder;
 
 export const useThreatMonitor = (rawDeviceIds = []) => {
   const [threats, setThreats] = useState({});
-  const clientRef = useRef(null);
-  const subscriptionsRef = useRef({}); 
-  const ttlTimersRef = useRef({});
 
-  // Ensure deviceIds is always an array of strings
-  const deviceIds = Array.isArray(rawDeviceIds) 
-    ? rawDeviceIds.map(id => String(id)) 
+  const clientRef = useRef(null);
+  const subscriptionsRef = useRef({});
+  const ttlTimersRef = useRef({});
+  const deviceIdsRef = useRef([]);
+
+  const deviceIds = Array.isArray(rawDeviceIds)
+    ? rawDeviceIds.map(id => String(id))
     : [];
 
-  const syncSubscriptions = (ids) => {
+  deviceIdsRef.current = deviceIds;
+
+  const syncSubscriptions = () => {
     const client = clientRef.current;
     if (!client || !client.connected) return;
 
+    const ids = deviceIdsRef.current;
+
     ids.forEach(id => {
       if (!subscriptionsRef.current[id]) {
-        console.log(`[STOMP] Subscribing to: /topic/threats/${id}`);
-        
-        subscriptionsRef.current[id] = client.subscribe(`/topic/threats/${id}`, (msg) => {
-          console.log(`[STOMP RECEIVE] Device ${id} raw payload:`, msg.body);
+        console.log(`[STOMP] Subscribing to /topic/threats/${id}`);
 
-          try {
-            const payload = JSON.parse(msg.body);
+        subscriptionsRef.current[id] = client.subscribe(
+          `/topic/threats/${id}`,
+          (msg) => {
+            console.log(`[STOMP RECEIVE] Device ${id}`, msg.body);
 
-            const normalizedPayload = {
-              ...payload,
-              level: payload.threatLevel,
-              deviceId: payload.rawDeviceId,
-              object: payload.objectDetected,
-              isThreat: payload.threatLevel === 'HIGH',
-              lastUpdated: Date.now()
-            };
+            try {
+              const payload = JSON.parse(msg.body);
 
-            // Update threat immediately
-            setThreats(prev => ({
-              ...prev,
-              [id]: normalizedPayload
-            }));
-
-            // Clear existing TTL timer
-            if (ttlTimersRef.current[id]) {
-              clearTimeout(ttlTimersRef.current[id]);
-            }
-
-            // Start new TTL timer (3 minutes to match backend Redis TTL)
-            ttlTimersRef.current[id] = setTimeout(() => {
-              console.log(`[TTL] Expired - Downgrading device ${id} to LOW`);
+              const normalizedPayload = {
+                ...payload,
+                level: payload.threatLevel,
+                deviceId: payload.rawDeviceId,
+                object: payload.objectDetected,
+                isThreat: payload.threatLevel === 'HIGH',
+                lastUpdated: Date.now()
+              };
 
               setThreats(prev => ({
                 ...prev,
-                [id]: {
-                  ...prev[id],
-                  level: 'LOW',
-                  isThreat: false,
-                }
+                [id]: normalizedPayload
               }));
-            }, 180000); // 3 minutes
 
-          } catch (e) {
-            console.error("[STOMP] Payload parse error:", e);
+              if (ttlTimersRef.current[id]) {
+                clearTimeout(ttlTimersRef.current[id]);
+              }
+
+              ttlTimersRef.current[id] = setTimeout(() => {
+                console.log(`[TTL] Expired - Downgrading device ${id}`);
+
+                setThreats(prev => ({
+                  ...prev,
+                  [id]: {
+                    ...prev[id],
+                    level: 'LOW',
+                    isThreat: false
+                  }
+                }));
+
+              }, 180000);
+
+            } catch (e) {
+              console.error("[STOMP] Payload parse error:", e);
+            }
           }
-        });
+        );
       }
     });
 
-    // Unsubscribe from devices no longer in the list
     Object.keys(subscriptionsRef.current).forEach(id => {
       if (!ids.includes(id)) {
-        console.log(`[STOMP] Unsubscribing from: ${id}`);
+        console.log(`[STOMP] Unsubscribing ${id}`);
+
         subscriptionsRef.current[id].unsubscribe();
 
         if (ttlTimersRef.current[id]) {
@@ -88,51 +94,57 @@ export const useThreatMonitor = (rawDeviceIds = []) => {
   };
 
   useEffect(() => {
-    if (deviceIds.length === 0) return;
 
-    if (clientRef.current) {
-      if (clientRef.current.connected) {
-        syncSubscriptions(deviceIds);
-      }
-      return; 
+    if (!clientRef.current) {
+      console.log('[STOMP] Creating persistent WebSocket connection');
+
+      const client = new Client({
+        brokerURL:
+          'wss://guardian-backend-api-cehse7acc4bfhcdq.canadacentral-01.azurewebsites.net/ws-security',
+
+        reconnectDelay: 5000,
+        heartbeatIncoming: 10000,
+        heartbeatOutgoing: 10000,
+
+        debug: (str) => {
+          console.log('[STOMP Debug]', str);
+        },
+
+        onConnect: () => {
+          console.log('[STOMP] Connected');
+          syncSubscriptions();
+        },
+
+        onWebSocketError: (error) => {
+          console.error('[STOMP] WebSocket error', error);
+        },
+
+        onStompError: (frame) => {
+          console.error('[STOMP] Broker error', frame.headers['message']);
+        }
+      });
+
+      client.activate();
+      clientRef.current = client;
     }
 
-    console.log('[STOMP] Initializing WebSocket Connection...');
+    syncSubscriptions();
 
-    const client = new Client({
-      webSocketFactory: () => new WebSocket(
-        'wss://guardian-backend-api-cehse7acc4bfhcdq.canadacentral-01.azurewebsites.net/ws-security', 
-        ['v12.stomp', 'v11.stomp', 'v10.stomp']
-      ),
-      reconnectDelay: 5000,
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000,
-      debug: (str) => {
-        console.log('[STOMP Debug]', str);
-      },
-      onConnect: () => {
-        console.log('[STOMP] Connected successfully');
-        syncSubscriptions(deviceIds);
-      },
-      onStompError: (frame) => console.error('[STOMP] Error:', frame.headers['message']),
-      onWebSocketError: (err) => console.error('[STOMP] WebSocket Error:', err),
-    });
-
-    client.activate();
-    clientRef.current = client;
-
-  }, [JSON.stringify(deviceIds)]); 
+  }, [deviceIds.join(',')]);
 
   useEffect(() => {
     return () => {
       if (clientRef.current) {
-        console.log('[STOMP] Deactivating WebSocket Connection');
+        console.log('[STOMP] Closing socket');
+
         clientRef.current.deactivate();
         clientRef.current = null;
       }
-      
-      // Cleanup all active TTL timers on unmount
-      Object.values(ttlTimersRef.current).forEach(timer => clearTimeout(timer));
+
+      Object.values(ttlTimersRef.current).forEach(timer =>
+        clearTimeout(timer)
+      );
+
       ttlTimersRef.current = {};
     };
   }, []);
