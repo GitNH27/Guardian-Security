@@ -1,4 +1,5 @@
 package com.GuardianSecurity.security_backend.dto.internal;
+import java.util.List;
 
 public class MlDataPayload {
 
@@ -7,7 +8,7 @@ public class MlDataPayload {
     }
 
     private String level;
-    private String object;
+    private List<String> objects;
     private String url;
     private String liveFeed;
 
@@ -16,8 +17,8 @@ public class MlDataPayload {
         return level;
     }
 
-    public String getObject() {
-        return object;
+    public List<String> getObjects() {
+        return objects;
     }
 
     public String getUrl() {
@@ -33,8 +34,8 @@ public class MlDataPayload {
         this.level = level;
     }
 
-    public void setObject(String object) {
-        this.object = object;
+    public void setObjects(List<String> objects) {
+        this.objects = objects;
     }
 
     public void setUrl(String url) {

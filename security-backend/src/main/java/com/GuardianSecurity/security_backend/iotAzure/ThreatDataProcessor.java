@@ -212,8 +212,20 @@ public class ThreatDataProcessor {
             try {
                 MlDataPayload mlData = objectMapper.convertValue(rawMlData, MlDataPayload.class);
                 record.setThreatLevel(mlData.getLevel());
-                record.setObjectDetected(mlData.getObject()); 
-                record.setPhotoUrl(mlData.getUrl());
+                
+                // --- LOGIC CHANGE START ---
+                if (mlData.getObjects() != null && !mlData.getObjects().isEmpty()) {
+                    // Join the list ["Person", "Gun"] into "Person, Gun"
+                    String joined = String.join(", ", mlData.getObjects());
+                    record.setObjectDetected(joined);
+                } else {
+                    record.setObjectDetected("None");
+                }
+                // --- LOGIC CHANGE END ---
+
+                // Note: Script 1 uses 'image_file' in the JSON
+                record.setPhotoUrl(mlData.getUrl()); 
+                
             } catch (IllegalArgumentException e) {
                 log.error("Failed to map inner ML data payload.", e);
                 throw new RuntimeException("Malformed ML data structure received.", e);
