@@ -6,8 +6,8 @@ import { sharedStyles } from '../styles/sharedStyles';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 const THREAT_LEVELS = ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'DANGER']; 
-const TOPICS = ['ALL', 'FRONT', 'BACK', 'LEFT', 'RIGHT', 'Interior'];
-const OBJECT_TYPES = ['ALL', 'Person', 'Animal', 'Vehicle', 'Intruder']; 
+const TOPICS = ['ALL', 'FRONT', 'REAR', 'LEFT', 'RIGHT'];
+const OBJECT_TYPES = ['ALL', 'Person', 'Knife', 'Gun', 'Hammer', 'Bat']; 
 
 export const LogFilter = ({ onApplyFilters }) => {
   // Local UI State

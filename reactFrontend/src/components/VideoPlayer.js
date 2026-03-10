@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useFocusEffect } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import { COLORS } from '../styles/theme';
 export const VideoPlayer = ({ videoUrl, fullscreen = false }) => {
 
   const webviewRef = useRef(null);
+  const [webKey, setWebKey] = useState(0);
 
   if (!videoUrl) return null;
 
