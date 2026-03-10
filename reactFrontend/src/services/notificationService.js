@@ -2,26 +2,19 @@ import apiClient from '../api/client';
 import messaging from '@react-native-firebase/messaging';
 import * as SecureStore from 'expo-secure-store';
 
-// 1. Throttling State
-let isCooldownActive = false;
+let lastNotificationTime = 0;
 const THROTTLE_LIMIT = 30000; // 30 seconds
 
 const shouldProcessNotification = () => {
-  if (isCooldownActive) {
-    console.log("[Throttled] Notification ignored during cooldown");
+  const now = Date.now();
+
+  if (now - lastNotificationTime < THROTTLE_LIMIT) {
+    console.log("[Throttled] Notification ignored");
     return false;
   }
 
-  // Allow the notification
-  isCooldownActive = true;
-
-  console.log("[Notification Allowed] Starting cooldown");
-
-  setTimeout(() => {
-    isCooldownActive = false;
-    console.log("[Cooldown Ended] Notifications allowed again");
-  }, THROTTLE_LIMIT);
-
+  lastNotificationTime = now;
+  console.log("[Notification Allowed]");
   return true;
 };
 
