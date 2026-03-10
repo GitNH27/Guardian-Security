@@ -222,16 +222,7 @@ public class ThreatDataProcessor {
                     record.setObjectDetected("None");
                 }
                 // --- LOGIC CHANGE END ---
-
-                // Note: Script 1 uses 'image_file' in the JSON
                 record.setPhotoUrl(mlData.getUrl());
-                String filename = mlData.getUrl();
-                if (filename != null) {
-                    String serial = record.getDevice().getSerialNumber(); // adjust getter if needed
-                    record.setPhotoUrl(
-                        "https://checkgroup44.blob.core.windows.net/threatimages/" + serial + "/" + filename
-                    );
-                }
                 
             } catch (IllegalArgumentException e) {
                 log.error("Failed to map inner ML data payload.", e);
