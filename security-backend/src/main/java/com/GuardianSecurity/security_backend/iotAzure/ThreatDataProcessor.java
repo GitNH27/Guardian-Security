@@ -145,7 +145,9 @@ public class ThreatDataProcessor {
     private String extractLiveUrl(Map<String, Object> dataMap) {
         if (dataMap.containsKey("ml_data")) {
             Map<String, Object> ml = (Map<String, Object>) dataMap.get("ml_data");
-            return (String) ml.get("liveFeed");
+            String url = (String) ml.get("liveFeed");
+            log.info("Extracted liveUrl: {}", url);  // ← add this
+            return url;
         }
         return null;
     }
