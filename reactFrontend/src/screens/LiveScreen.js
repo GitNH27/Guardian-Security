@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
+import { useFocusEffect } from '@react-navigation/native'; // NEW: For screen focus tracking
 
 import { COLORS, SPACING } from '../styles/theme';
 import { sharedStyles } from '../styles/sharedStyles';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { deviceService } from '../services/deviceService';
 import { useThreatMonitor } from '../hooks/useThreatMonitor';
+import { setNotificationSilence } from '../services/notificationService'; // NEW: Your service toggle
 
 export default function LiveScreen({ navigation }) {
   const [activeFeeds, setActiveFeeds] = useState({});
@@ -16,15 +18,27 @@ export default function LiveScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [deviceInfo, setDeviceInfo] = useState({ id: null, serial: null });
 
+  // 1. SILENCE LOGIC: Toggle notifications based on screen focus
+  useFocusEffect(
+    useCallback(() => {
+      // User entered LiveScreen: Silence notifications
+      setNotificationSilence(true);
+      console.log('[LiveScreen] Notifications Silenced');
+
+      return () => {
+        // User left LiveScreen: Resume notifications
+        setNotificationSilence(false);
+        console.log('[LiveScreen] Notifications Resumed');
+      };
+    }, [])
+  );
+
   const deviceIds = React.useMemo(() => {
     return deviceInfo.id ? [deviceInfo.id] : [];
   }, [deviceInfo.id]);
 
   const threats = useThreatMonitor(deviceIds);
   const lastThreat = deviceInfo.id ? threats[deviceInfo.id] : null;
-
-  console.log('[LiveScreen] Device Info:', deviceInfo);
-  console.log('[LiveScreen] Last Threat:', lastThreat);
 
   const fetchLiveStatus = async (isRefreshing = false) => {
     try {
@@ -46,7 +60,6 @@ export default function LiveScreen({ navigation }) {
             sanitizedFeeds[camera] = cleanUrl;
           }
         });
-        console.log('[LiveScreen] Initial feeds from Redis:', sanitizedFeeds);
         setActiveFeeds(sanitizedFeeds);
       }
     } catch (error) {
@@ -61,26 +74,14 @@ export default function LiveScreen({ navigation }) {
     fetchLiveStatus();
   }, []);
 
-  // FIX: Backend broadcasts a flat ThreatRecord, not a nested ml_data object.
-  // Read liveStreamUrl and cameraTopic directly from the top-level payload.
   useEffect(() => {
     if (!lastThreat) return;
 
-    console.log('[LiveScreen] WebSocket threat received:', lastThreat);
-
-    // Try flat field first (ThreatRecord from backend)
-    // Fall back to nested ml_data in case backend sends raw payload
     const liveUrl = lastThreat.liveStreamUrl ?? lastThreat.ml_data?.liveStreamUrl;
     const topic   = lastThreat.cameraTopic   ?? lastThreat.ml_data?.cameraTopic ?? 'front';
-    const level   = lastThreat.threatLevel   ?? lastThreat.ml_data?.level;
-    const object  = lastThreat.objectDetected ?? lastThreat.ml_data?.object;
-
-    console.log(`[LiveScreen] level=${level} object=${object} topic=${topic} url=${liveUrl}`);
 
     if (liveUrl) {
       const cleanUrl = liveUrl.replace(/["\\]/g, '').trim();
-      console.log('[LiveScreen] Setting live feed URL:', cleanUrl);
-
       setActiveFeeds(prev => ({
         ...prev,
         [topic]: cleanUrl
@@ -96,7 +97,6 @@ export default function LiveScreen({ navigation }) {
   return (
     <SafeAreaView style={sharedStyles.safeArea}>
       <View style={sharedStyles.container}>
-
         <View style={sharedStyles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={COLORS.primary} />

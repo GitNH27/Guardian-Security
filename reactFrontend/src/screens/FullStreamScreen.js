@@ -1,13 +1,32 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+
 import { VideoPlayer } from '../components/VideoPlayer';
 import { COLORS, SPACING } from '../styles/theme';
 import { sharedStyles } from '../styles/sharedStyles';
+import { setNotificationSilence } from '../services/notificationService';
 
 export default function FullStreamScreen({ route, navigation }) {
-  // Extract params passed from LiveScreen
   const { url, title } = route.params;
+
+  useFocusEffect(
+    useCallback(() => {
+      setNotificationSilence(true);
+      console.log(`[FullStreamScreen] Silence Active for: ${title}`);
+
+      return () => {
+        // Delayed release prevents a gap if navigating back to LiveScreen,
+        // which also sets silence — without this, there's a window where
+        // both screens have released silence before LiveScreen re-acquires it.
+        setTimeout(() => {
+          setNotificationSilence(false);
+          console.log('[FullStreamScreen] Silence Released');
+        }, 100);
+      };
+    }, [title])
+  );
 
   return (
     <View style={styles.container}>

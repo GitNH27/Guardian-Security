@@ -17,27 +17,23 @@ export default function ThreatLogScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [serialNumber, setSerialNumber] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
-  
-  // State to hold the current active filters
   const [activeFilters, setActiveFilters] = useState({});
 
-  const fetchLogs = async (isRefreshing = false) => {
+  // Wrapped in useCallback so useFocusEffect always has a stable, up-to-date reference
+  const fetchLogs = useCallback(async (isRefreshing = false) => {
     try {
       if (!isRefreshing) setLoading(true);
-      
+
       const [storedSerial, storedEmail] = await Promise.all([
         SecureStore.getItemAsync('activeDeviceSerial'),
         SecureStore.getItemAsync('userEmail')
       ]);
-      
+
       setUserEmail(storedEmail);
       setSerialNumber(storedSerial || "Unknown Device");
 
       if (storedSerial) {
-        // Pass the activeFilters object to the service call
         const data = await threatLogService.getThreatLogs(storedSerial, activeFilters);
-        
-        // Sorting by createdAt (ensure your backend uses this field name)
         const sortedLogs = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setLogs(sortedLogs);
       }
@@ -47,17 +43,18 @@ export default function ThreatLogScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [activeFilters]); // fetchLogs updates whenever filters change
 
-  // Reactively fetch logs whenever the filters are changed
+  // Fires when filters change
   useEffect(() => {
     fetchLogs();
-  }, [activeFilters]);
+  }, [fetchLogs]);
 
+  // Fires when screen comes into focus — depends on fetchLogs, not activeFilters directly
   useFocusEffect(
     useCallback(() => {
       fetchLogs();
-    }, [activeFilters])
+    }, [fetchLogs])
   );
 
   const onRefresh = () => {
@@ -68,14 +65,13 @@ export default function ThreatLogScreen({ navigation }) {
   return (
     <SafeAreaView style={sharedStyles.safeArea}>
       <View style={[sharedStyles.container, { flex: 1 }]}>
-        
-        {/* Header - Remains fixed at the top */}
+
         <View style={sharedStyles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
           </TouchableOpacity>
           <Text style={sharedStyles.headerTitle}>ACTIVITY LOGS</Text>
-          <View style={{ width: 24 }} /> 
+          <View style={{ width: 24 }} />
         </View>
 
         {loading && !refreshing ? (
@@ -89,12 +85,11 @@ export default function ThreatLogScreen({ navigation }) {
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => <LogEntryCard item={item} userEmail={userEmail} />}
             contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-            
-            // CRITICAL FIX: The Filter and Subtitle move with the scroll
+
             ListHeaderComponent={
               <View style={{ paddingTop: 10 }}>
                 <LogFilter onApplyFilters={(filters) => setActiveFilters(filters)} />
-                
+
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
                   <Text style={[sharedStyles.subtitle, { marginBottom: 0 }]}>
                     Device: {serialNumber}
@@ -107,23 +102,23 @@ export default function ThreatLogScreen({ navigation }) {
                 </View>
               </View>
             }
-            
+
             refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
-                onRefresh={onRefresh} 
-                tintColor={COLORS.primary} 
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={COLORS.primary}
                 colors={[COLORS.primary]}
               />
             }
-            
+
             ListEmptyComponent={
               <View style={{ alignItems: 'center', marginTop: 50 }}>
                 <Ionicons name="document-text-outline" size={60} color={COLORS.textHint} />
                 <Text style={[sharedStyles.hintText, { fontSize: 16, marginTop: 10 }]}>
-                    {Object.keys(activeFilters).length > 0 
-                      ? "No logs match your filters." 
-                      : "No recent activity detected."}
+                  {Object.keys(activeFilters).length > 0
+                    ? "No logs match your filters."
+                    : "No recent activity detected."}
                 </Text>
               </View>
             }
