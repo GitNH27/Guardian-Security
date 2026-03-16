@@ -6,50 +6,68 @@ const THROTTLE_LIMIT = 30000; // 30 seconds
 const SILENCE_KEY = 'notification_silence_active';
 const LAST_NOTIFICATION_TIME_KEY = 'last_notification_time';
 
-let isProcessing = false; // In-memory lock — synchronous, no race condition
+// --- IN-MEMORY STATE (synchronous, no await needed) ---
+let isProcessing = false;
+let inMemorySilence = false;
+let inMemoryLastTime = 0;
 
 // --- SILENCE CONTROL (called by LiveScreen & FullStreamScreen) ---
 
 export const setNotificationSilence = async (isSilent) => {
-  await SecureStore.setItemAsync(SILENCE_KEY, isSilent ? 'true' : 'false');
+  inMemorySilence = isSilent; // Synchronous — instant effect
+  await SecureStore.setItemAsync(SILENCE_KEY, isSilent ? 'true' : 'false'); // Persisted for background context
   console.log(`[Notification Service] Silence Mode: ${isSilent}`);
 };
 
 // --- GATE: Runs before every foreground & background notification ---
 
 const shouldProcessNotification = async () => {
-  // 1. Synchronous lock — if another notification is mid-check, reject immediately
+  // 1. Synchronous lock — rejects entire spam burst instantly, no await
   if (isProcessing) {
     console.log("[Throttled] Rejected — another notification is being processed");
     return false;
   }
 
-  isProcessing = true; // Claim the lock before any await
+  isProcessing = true; // Claim lock before any await
 
   try {
-    // 2. Silence check (persisted — survives background JS context)
+    // 2. In-memory silence check (synchronous — survives WebSocket spam)
+    if (inMemorySilence) {
+      console.log("[Ignored] Silenced in-memory");
+      return false;
+    }
+
+    // 3. In-memory throttle check (synchronous — no SecureStore needed)
+    const now = Date.now();
+    if (now - inMemoryLastTime < THROTTLE_LIMIT) {
+      console.log("[Throttled] In-memory throttle hit");
+      return false;
+    }
+
+    // 4. Persisted silence check (catches fresh background JS context where inMemorySilence resets)
     const silenced = await SecureStore.getItemAsync(SILENCE_KEY);
     if (silenced === 'true') {
-      console.log("[Notification Ignored] User is in a Silent Zone");
+      console.log("[Ignored] Silenced via SecureStore (background context)");
       return false;
     }
 
-    // 3. 30-second throttle check (persisted for background context)
+    // 5. Persisted throttle check (catches fresh background JS context where inMemoryLastTime resets)
     const lastTimeStr = await SecureStore.getItemAsync(LAST_NOTIFICATION_TIME_KEY);
     const lastTime = lastTimeStr ? parseInt(lastTimeStr) : 0;
-    const now = Date.now();
-
     if (now - lastTime < THROTTLE_LIMIT) {
-      console.log("[Throttled] Notification ignored (limit: 30s)");
+      console.log("[Throttled] Persisted throttle hit (background context)");
       return false;
     }
 
+    // 6. Commit both timestamps — in-memory first (synchronous), then persisted
+    inMemoryLastTime = now;
     await SecureStore.setItemAsync(LAST_NOTIFICATION_TIME_KEY, String(now));
+
     console.log("[Notification Allowed]");
     return true;
 
   } finally {
-    isProcessing = false; // Always release the lock, even if SecureStore throws
+    isProcessing = false; // Always release lock, even if SecureStore throws
   }
 };
 

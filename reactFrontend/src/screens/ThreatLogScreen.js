@@ -10,6 +10,7 @@ import { sharedStyles } from '../styles/sharedStyles';
 import { threatLogService } from '../services/threatLogService';
 import { LogEntryCard } from '../components/LogEntryCard';
 import { LogFilter } from '../components/LogFilter';
+import { setNotificationSilence } from '../services/notificationService';
 
 export default function ThreatLogScreen({ navigation }) {
   const [logs, setLogs] = useState([]);
@@ -18,6 +19,13 @@ export default function ThreatLogScreen({ navigation }) {
   const [serialNumber, setSerialNumber] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
   const [activeFilters, setActiveFilters] = useState({});
+
+  useFocusEffect(
+    useCallback(() => {
+      setNotificationSilence(true);
+      return () => setNotificationSilence(false);
+    }, [])
+  );
 
   // Wrapped in useCallback so useFocusEffect always has a stable, up-to-date reference
   const fetchLogs = useCallback(async (isRefreshing = false) => {

@@ -11,21 +11,12 @@ import { setNotificationSilence } from '../services/notificationService';
 export default function FullStreamScreen({ route, navigation }) {
   const { url, title } = route.params;
 
+  // Add inside component, near your other useFocusEffect
   useFocusEffect(
     useCallback(() => {
       setNotificationSilence(true);
-      console.log(`[FullStreamScreen] Silence Active for: ${title}`);
-
-      return () => {
-        // Delayed release prevents a gap if navigating back to LiveScreen,
-        // which also sets silence — without this, there's a window where
-        // both screens have released silence before LiveScreen re-acquires it.
-        setTimeout(() => {
-          setNotificationSilence(false);
-          console.log('[FullStreamScreen] Silence Released');
-        }, 100);
-      };
-    }, [title])
+      return () => setNotificationSilence(false);
+    }, [])
   );
 
   return (

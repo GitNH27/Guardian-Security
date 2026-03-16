@@ -18,17 +18,14 @@ export default function LiveScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [deviceInfo, setDeviceInfo] = useState({ id: null, serial: null });
 
-  // 1. SILENCE LOGIC: Toggle notifications based on screen focus
   useFocusEffect(
     useCallback(() => {
-      // User entered LiveScreen: Silence notifications
       setNotificationSilence(true);
-      console.log('[LiveScreen] Notifications Silenced');
 
       return () => {
-        // User left LiveScreen: Resume notifications
-        setNotificationSilence(false);
-        console.log('[LiveScreen] Notifications Resumed');
+        setTimeout(() => {
+          setNotificationSilence(false);
+        }, 100);
       };
     }, [])
   );
