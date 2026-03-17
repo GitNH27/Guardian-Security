@@ -101,10 +101,15 @@ public class ThreatDataProcessor {
         List<User> usersToNotify = threatLogService.getAllUsersWithAccess(record.getDevice().getId());
 
         boolean isIntruder = "INTRUDER".equals(type);
-        String title = isIntruder ? "IMMINENT THREAT" : "High Threat Detected";
-        String body = record.getObjectDetected() + " detected near your car!";
+        String threatLevel = record.getThreatLevel(); // e.g., "MEDIUM"
         
-        if (usersToNotify != null && !usersToNotify.isEmpty() && ("HIGH".equals(record.getThreatLevel()) || isIntruder)) {
+        // Updated condition to allow HIGH, MEDIUM, and INTRUDER
+        boolean shouldAlert = "HIGH".equals(threatLevel) || "MEDIUM".equals(threatLevel) || isIntruder;
+
+        if (usersToNotify != null && !usersToNotify.isEmpty() && shouldAlert) {
+            String title = isIntruder ? "IMMINENT THREAT" : (threatLevel + " Threat Detected");
+            String body = record.getObjectDetected() + " detected near your car!";
+            
             for (User user : usersToNotify) {
                 try {
                     fcmNotificationService.sendThreatNotification(user, title, body, isIntruder);
@@ -114,13 +119,13 @@ public class ThreatDataProcessor {
             }
         }
 
-        // --- FIX 1: Save URL as plain string ---
-        if (liveUrl != null) {
+        // Ensure the liveUrl is cached in Redis for React to find it
+        if (liveUrl != null && shouldAlert) {
             String statusKey = "device:status:" + record.getRawDeviceId() + ":" + record.getCameraTopic().replace("/", ":");
             redisTemplate.opsForValue().set(statusKey, liveUrl, Duration.ofMinutes(3));
         }
 
-        // --- FIX 2: Manually serialize for Pub/Sub ---
+        // Always send the Pub/Sub so the Activity Log updates in real-time
         record.setLiveStreamUrl(liveUrl);
         try {
             String jsonPayload = objectMapper.writeValueAsString(record);

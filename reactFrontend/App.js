@@ -6,7 +6,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import messaging from '@react-native-firebase/messaging';
-import { Alert } from 'react-native';
+import { Alert, LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  'Expected HTTP 101 response',
+  '[STOMP]',
+  'WebSocket Error'
+]);
 
 export default function App() {
   useEffect(() => {
