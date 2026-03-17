@@ -73,24 +73,32 @@ const shouldProcessNotification = async () => {
 
 // --- REGISTRATION ---
 
+// --- REGISTRATION (Modern Modular Syntax) ---
 export const registerForPushNotifications = async () => {
   try {
+    // 1. Get the messaging instance
     const authStatus = await messaging().requestPermission();
+    
+    // 2. Check status using the imported constants
     const enabled =
       authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
       authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
     if (enabled) {
+      // 3. Explicitly calling getToken from the instance
       const token = await messaging().getToken();
+      
       console.log('FCM TOKEN: ', token);
       await SecureStore.setItemAsync('fcm_token', token);
       return token;
+    } else {
+      console.log('User declined notification permissions');
     }
   } catch (error) {
+    // This is where SERVICE_NOT_AVAILABLE is currently caught
     console.error('Notification setup failed:', error);
   }
 };
-
 // --- FCM TOKEN REFRESH ---
 
 export const setupFCMTokenRefreshListener = (userJwt) => {
