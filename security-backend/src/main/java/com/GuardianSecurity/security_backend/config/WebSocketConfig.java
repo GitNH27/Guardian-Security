@@ -38,24 +38,35 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
                     String authHeader = accessor.getFirstNativeHeader("Authorization");
                     
+                    logger.info("[STOMP] CONNECT frame received. Checking headers...");
+
                     if (authHeader != null && authHeader.startsWith("Bearer ")) {
                         String token = authHeader.substring(7);
                         try {
+                            // CRITICAL CHECK: Ensure the bean was actually injected
+                            if (jwtService == null) {
+                                logger.error("[STOMP] jwtService is NULL. @Autowired failed or circular dependency detected.");
+                                return message; 
+                            }
+
                             String username = jwtService.extractUsername(token);
                             if (username != null) {
-                                // Create an auth object so Spring Security recognizes the user
+                                // Use empty authorities to satisfy .authenticated() requirement
                                 UsernamePasswordAuthenticationToken auth = 
-                                    new UsernamePasswordAuthenticationToken(username, null, null);
+                                    new UsernamePasswordAuthenticationToken(username, null, java.util.Collections.emptyList());
                                 
                                 accessor.setUser(auth);
-                                logger.info("[STOMP] WebSocket Authentication Successful for: {}", username);
+                                logger.info("[STOMP] User {} authenticated via JWT", username);
                             }
                         } catch (Exception e) {
-                            logger.error("[STOMP] WebSocket Auth Failed: {}", e.getMessage());
+                            // This will print the exact reason for the 500 error in Azure Log Stream
+                            logger.error("[STOMP] Auth Failure: ", e);
                         }
+                    } else {
+                        logger.warn("[STOMP] CONNECT frame missing Bearer token");
                     }
                 }
                 return message;
